@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Embedded Dashboard</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="container py-5">
+
+        <h1 class="text-center mb-4">
+            Embedded Systems Dashboard
+        </h1>
+
+        <!-- Chart -->
+        <div class="card p-4 mb-4">
+            <canvas id="temperatureChart"></canvas>
+        </div>
+
+        <!-- Gauge -->
+        <div class="card p-4 text-center">
+            <canvas id="gauge"></canvas>
+        </div>
+
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Canvas Gauges -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-gauges/gauge.min.js"></script>
+
+    <!-- Custom JS -->
+    <script src="js/app.js"></script>
+
+</body>
+</html>
