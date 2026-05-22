@@ -1,102 +1,155 @@
 /* ═══════════════════════════════════════════════
-   AgroSense – app.js
-   Dashboard logic: charts, pump control, live data
+   AgroSense – app.js  (Light Theme)
+   Dashboard logic: charts, pump control, crop profile, live data
 ═══════════════════════════════════════════════ */
 
-/* PLACEHOLDER BACKEND */
 /* ── Simulated sensor state ───────────────────── */
 const state = {
-  moisture:    32,
-  temperature: 26,
-  humidity:    65,
+  moisture:    38.4,
+  temperature: 27.2,
+  humidity:    65.2,
   pumpOn:      true,
-  dataLogged:  240,
+  dataLogged:  276,
+  cropActive:  'Tomato',
 };
 
-/* ── Chart colour palette ─────────────────────── */
-const GREEN_MID    = '#2d6a4f';
-const GREEN_ACCENT = '#52b788';
-const GREEN_LIGHT  = 'rgba(82,183,136,.18)';
-const ORANGE       = '#e67e22';
+/* ── Chart colour palette (light theme) ──────── */
+const C_GREEN_MID    = '#3b6d11';
+const C_GREEN_ACCENT = '#97c459';
+const C_GREEN_FILL   = 'rgba(59,109,17,0.08)';
+const C_ORANGE       = '#ba7517';
+const C_GRID         = 'rgba(0,0,0,0.05)';
+const C_TICK         = '#7a9178';
+
+/* ── Crop profiles ────────────────────────────── */
+const CROPS = {
+  Tomato: [
+    ['Daily VW demand', '600–1,200 mL'],
+    ['FAO-56 Kc (mid)',  '1.15'],
+    ['Kc (late)',        '0.70'],
+    ['Root depth',       '60–150 cm'],
+    ['MAD threshold',    '40%'],
+  ],
+  Pechay: [
+    ['Daily VW demand', '150–300 mL'],
+    ['FAO-56 Kc (mid)',  '0.95'],
+    ['Kc (late)',        '0.85'],
+    ['Root depth',       '15–30 cm'],
+    ['MAD threshold',    '35%'],
+  ],
+};
 
 /* ── Helpers ──────────────────────────────────── */
-function updateBadge(id, text, cls) {
-  const el = document.getElementById(id);
-  el.textContent  = text;
-  el.className    = 'stat-badge ' + cls;
+function el(id) { return document.getElementById(id); }
+
+function moistureBadgeClass(v) {
+  if (v < 30)  return ['DRY — Approaching Management Allowed Depletion', 'badge-dry'];
+  if (v > 70)  return ['ANOXIA RISK — Soil Saturation Dangerously High', 'badge-anoxia'];
+  return ['OPTIMAL — Soil Moisture Within Safe Range', 'badge-optimal'];
 }
 
 function refreshCards() {
-  // Soil Moisture
-  document.getElementById('soilMoisture').textContent = state.moisture + '%';
-  if (state.moisture < 30) {
-    updateBadge('moistureBadge', 'Low', 'badge-low');
-  } else if (state.moisture < 60) {
-    updateBadge('moistureBadge', 'Optimal', 'badge-ok');
-  } else {
-    updateBadge('moistureBadge', 'Wet', 'badge-ok');
-  }
+  // Soil moisture
+  el('soilMoisture').textContent = state.moisture.toFixed(1) + '%';
+  const [bText, bClass] = moistureBadgeClass(state.moisture);
+  const badge = el('moistureBadge');
+  badge.textContent = bText;
+  badge.className   = 'stat-badge ' + bClass;
 
-  // Temperature & Humidity
-  document.getElementById('temperature').textContent = state.temperature + '°C';
-  document.getElementById('humidity').textContent    = state.humidity + '%';
+  // Temperature & humidity
+  el('temperature').textContent = state.temperature.toFixed(1) + '°C';
+  el('humidity').textContent    = state.humidity.toFixed(1) + '%';
+
+  // Update env gauge SVG text
+  const gTemp = el('gaugeTempVal');
+  const gHum  = el('gaugeHumVal');
+  if (gTemp) gTemp.textContent = state.temperature.toFixed(1);
+  if (gHum)  gHum.textContent  = state.humidity.toFixed(1);
 
   // Pump
-  const icon  = document.getElementById('pumpIcon');
-  const badge = document.getElementById('pumpBadge');
+  const icon  = el('pumpIcon');
+  const pBadge = el('pumpBadge');
+  const toggleSwitch = el('pumpToggleSwitch');
+  const toggleLbl    = el('toggleLabel');
+
   if (state.pumpOn) {
-    icon.className  = 'bi bi-power pump-on-anim';
-    badge.textContent = 'Pump: ON';
-    badge.className = 'stat-badge badge-on';
-    document.getElementById('btnPumpToggle').textContent = 'Turn Pump OFF';
+    icon.className        = 'bi bi-power pump-on-anim';
+    pBadge.textContent    = 'Pump: ON';
+    pBadge.className      = 'stat-badge badge-on';
+    if (toggleSwitch) toggleSwitch.checked = true;
+    if (toggleLbl) { toggleLbl.textContent = 'ON'; toggleLbl.style.color = '#3b6d11'; }
   } else {
-    icon.className  = 'bi bi-power';
-    badge.textContent = 'Pump: OFF';
-    badge.className = 'stat-badge badge-off';
-    document.getElementById('btnPumpToggle').textContent = 'Turn Pump ON';
+    icon.className        = 'bi bi-power';
+    pBadge.textContent    = 'Pump: OFF';
+    pBadge.className      = 'stat-badge badge-off';
+    if (toggleSwitch) toggleSwitch.checked = false;
+    if (toggleLbl) { toggleLbl.textContent = 'OFF'; toggleLbl.style.color = '#a32d2d'; }
   }
 
   // Data counter
-  document.getElementById('dataLogged').textContent = state.dataLogged + ' Entries';
+  el('dataLogged').textContent = state.dataLogged.toLocaleString() + ' Entries';
 }
 
-/* PLACEHOLDER MANUAL WATERING */
-/* ── Pump control ─────────────────────────────── */
+/* ── Pump controls ────────────────────────────── */
 function togglePump() {
   state.pumpOn = !state.pumpOn;
+  refreshCards();
+}
+
+function togglePumpSwitch() {
+  state.pumpOn = el('pumpToggleSwitch').checked;
   refreshCards();
 }
 
 function manualWater() {
   state.pumpOn = true;
   refreshCards();
-  alert('💧 Manual watering started!');
+  const btn = el('btnManualWater');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Watering…';
+  btn.style.background = '#c0dd97';
+  setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 2500);
 }
 
-/* PLACEHOLDER GRAPH HISTORY */
-/* ── Generate mock time-series data ───────────── */
+/* ── Crop profile ─────────────────────────────── */
+function renderCrop(name) {
+  const params = CROPS[name];
+  el('cropParams').innerHTML = params.map(([k, v], i) =>
+    `<div class="param-row" style="${i === params.length - 1 ? 'border:none' : ''}">
+      <span class="param-key">${k}</span>
+      <span class="param-val">${v}</span>
+    </div>`
+  ).join('');
+}
+
+function selectCrop(name) {
+  state.cropActive = name;
+  ['Tomato', 'Pechay'].forEach(c => {
+    el('tab' + c).classList.toggle('active', c === name);
+  });
+  renderCrop(name);
+}
+
+/* ── Mock time-series data ────────────────────── */
 function genMoistureData(hours) {
   const labels = [], data = [];
-  const now = new Date();
-  for (let i = hours; i >= 0; i -= Math.max(1, Math.floor(hours / 10))) {
-    const t = new Date(now - i * 3600000);
+  const now    = new Date();
+  const step   = Math.max(1, Math.floor(hours / 10));
+  for (let i = hours; i >= 0; i -= step) {
+    const t = new Date(now - i * 3_600_000);
     labels.push(t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    // Simulate wavy moisture curve
     data.push(+(20 + 40 * Math.abs(Math.sin(i * 0.4 + 1)) + Math.random() * 8).toFixed(1));
   }
   return { labels, data };
 }
 
-/* ── Line Chart (Moisture over time) ─────────── */
+/* ── Line chart ───────────────────────────────── */
 let lineChart;
 
 function buildLineChart(hours = 24) {
-  const ctx = document.getElementById('moistureLineChart').getContext('2d');
+  const ctx = el('moistureLineChart').getContext('2d');
   const { labels, data } = genMoistureData(hours);
-
-  // Threshold annotation lines via dataset trick
-  const optimalLine = Array(labels.length).fill(40);
-  const lowLine     = Array(labels.length).fill(20);
+  const n = labels.length;
 
   if (lineChart) lineChart.destroy();
 
@@ -106,32 +159,32 @@ function buildLineChart(hours = 24) {
       labels,
       datasets: [
         {
-          label: 'Soil Moisture (%)',
+          label: 'Soil moisture (%)',
           data,
-          borderColor: GREEN_MID,
-          backgroundColor: GREEN_LIGHT,
-          borderWidth: 2.5,
+          borderColor:     C_GREEN_MID,
+          backgroundColor: C_GREEN_FILL,
+          borderWidth: 2,
           pointRadius: 3,
-          pointBackgroundColor: GREEN_MID,
+          pointBackgroundColor: C_GREEN_MID,
           fill: true,
           tension: 0.4,
         },
         {
           label: 'Optimal',
-          data: optimalLine,
-          borderColor: GREEN_ACCENT,
+          data:  Array(n).fill(40),
+          borderColor: C_GREEN_MID,
           borderWidth: 1.5,
-          borderDash: [6, 4],
+          borderDash:  [6, 4],
           pointRadius: 0,
           fill: false,
           tension: 0,
         },
         {
-          label: 'Low Threshold',
-          data: lowLine,
-          borderColor: ORANGE,
+          label: 'Low threshold',
+          data:  Array(n).fill(20),
+          borderColor: C_ORANGE,
           borderWidth: 1.5,
-          borderDash: [4, 4],
+          borderDash:  [4, 4],
           pointRadius: 0,
           fill: false,
           tension: 0,
@@ -144,36 +197,26 @@ function buildLineChart(hours = 24) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + '%',
-          },
-        },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + '%' } },
       },
       scales: {
         x: {
-          ticks: { color: '#5a7a65', font: { size: 10 } },
-          grid:  { color: '#e8f5e9' },
+          ticks: { color: C_TICK, font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 9 },
+          grid:  { color: C_GRID },
         },
         y: {
           min: 0, max: 80,
-          ticks: {
-            color: '#5a7a65',
-            font: { size: 10 },
-            callback: v => v + '%',
-          },
-          grid: { color: '#e8f5e9' },
+          ticks: { color: C_TICK, font: { size: 9 }, callback: v => v + '%' },
+          grid:  { color: C_GRID },
         },
       },
     },
   });
 }
 
-/* PLACEHOLDER HISTORY CHART */
-/* ── Bar Chart (History Overview) ────────────── */
+/* ── Bar chart ────────────────────────────────── */
 function buildBarChart() {
-  const ctx = document.getElementById('historyBarChart').getContext('2d');
-
+  const ctx     = el('historyBarChart').getContext('2d');
   const days    = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const avgData = [45, 55, 38, 62, 50, 47, 53];
 
@@ -182,12 +225,10 @@ function buildBarChart() {
     data: {
       labels: days,
       datasets: [{
-        label: 'Avg Moisture (%)',
+        label: 'Avg moisture (%)',
         data: avgData,
-        backgroundColor: days.map((_, i) =>
-          i < 3 ? GREEN_MID : GREEN_ACCENT + 'aa'
-        ),
-        borderRadius: 6,
+        backgroundColor: days.map((_, i) => i % 2 === 0 ? C_GREEN_ACCENT : C_GREEN_MID),
+        borderRadius: 5,
         borderSkipped: false,
       }],
     },
@@ -196,36 +237,30 @@ function buildBarChart() {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: { label: ctx => ctx.parsed.y + '%' },
-        },
-        // Show value labels on bars
-        datalabels: false,
+        tooltip: { callbacks: { label: ctx => ctx.parsed.y + '%' } },
       },
       scales: {
         x: {
-          ticks: { color: '#5a7a65', font: { size: 11 } },
+          ticks: { color: C_TICK, font: { size: 10 } },
           grid:  { display: false },
         },
         y: {
           min: 0, max: 80,
-          ticks: { color: '#5a7a65', font: { size: 10 }, callback: v => v + '%' },
-          grid:  { color: '#e8f5e9' },
+          ticks: { color: C_TICK, font: { size: 9 }, callback: v => v + '%' },
+          grid:  { color: C_GRID },
         },
       },
     },
     plugins: [{
-      // Draw percentage labels above each bar
       id: 'barLabels',
       afterDatasetsDraw(chart) {
         const { ctx, data } = chart;
         ctx.save();
-        ctx.font = 'bold 11px DM Sans, sans-serif';
-        ctx.fillStyle = GREEN_MID;
+        ctx.font      = '600 10px DM Sans, sans-serif';
+        ctx.fillStyle = C_GREEN_MID;
         ctx.textAlign = 'center';
         chart.getDatasetMeta(0).data.forEach((bar, i) => {
-          const val = data.datasets[0].data[i];
-          ctx.fillText(val + '%', bar.x, bar.y - 6);
+          ctx.fillText(data.datasets[0].data[i] + '%', bar.x, bar.y - 5);
         });
         ctx.restore();
       },
@@ -234,22 +269,17 @@ function buildBarChart() {
 }
 
 /* ── Range selector ───────────────────────────── */
-function updateRange(hours) {
-  buildLineChart(Number(hours));
-}
+function updateRange(hours) { buildLineChart(Number(hours)); }
 
-/* PLACEHOLDER SENSOR FLUCTUATIONS */
-/* TEMPORARY FRONTEND SIMULATION ( REPLACE WITH REAL SENSOR UPDATES ) */
-/* ── Simulate live data ticks ─────────────────── */
+/* ── Simulate live sensor ticks ───────────────── */
 function simulateLiveData() {
   setInterval(() => {
-    // Gentle random walk
     state.moisture    = Math.min(100, Math.max(5,  state.moisture    + (Math.random() * 4 - 2)));
     state.temperature = Math.min(45,  Math.max(15, state.temperature + (Math.random() * 1 - 0.5)));
     state.humidity    = Math.min(100, Math.max(20, state.humidity    + (Math.random() * 2 - 1)));
     state.dataLogged += 1;
 
-    // Auto pump: turn on if moisture drops below 25
+    // Auto pump logic
     if (state.moisture < 25) state.pumpOn = true;
     if (state.moisture > 60) state.pumpOn = false;
 
@@ -258,12 +288,13 @@ function simulateLiveData() {
     state.humidity    = +state.humidity.toFixed(1);
 
     refreshCards();
-  }, 3000); // update every 3 seconds
+  }, 3000);
 }
 
 /* ── Init ─────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   refreshCards();
+  renderCrop('Tomato');
   buildLineChart(24);
   buildBarChart();
   simulateLiveData();
