@@ -1,21 +1,67 @@
 /* ═══════════════════════════════════════════════
    AgroSense – app.js
    Dashboard logic: charts, pump control, live data
+
+   BACKEND INTEGRATION OVERVIEW
+   ─────────────────────────────────────────────────
+   Currently all data in this file is SIMULATED.
+   To connect a real backend, you need to:
+
+   1. SENSOR DATA (moisture, temperature, humidity)
+      Replace simulateLiveData() with either:
+      a) Polling: setInterval(() => fetchSensorData(), 3000)
+         GET /api/sensors/latest  → { moisture, temperature, humidity }
+      b) WebSocket (recommended for real-time):
+         const ws = new WebSocket('ws://your-pi-ip/ws')
+         ws.onmessage = (e) => { updateState(JSON.parse(e.data)); }
+
+   2. PUMP CONTROL
+      Replace togglePump() / manualWater() with fetch() calls:
+      POST /api/pump/toggle  { "state": true/false }
+      POST /api/pump/manual  { "duration_minutes": 30 }
+
+   3. SETTINGS PERSISTENCE
+      Slider values (pulse, PWM, threshold) should be saved to DB.
+      On load: GET /api/settings  → restore all slider positions.
+      On change: POST /api/settings  { key: value }
+
+   4. HISTORICAL DATA
+      Replace genMoistureData() with:
+      GET /api/sensors/moisture/history?hours=24
+      GET /api/sensors/moisture/weekly-average
+
+   Recommended backend stack: Node.js (Express) or Python (Flask/FastAPI)
+   running on a Raspberry Pi, with SQLite or PostgreSQL as the database,
+   and MQTT or WebSocket for real-time sensor push from microcontrollers.
 ═══════════════════════════════════════════════ */
 
-/* ── Sensor state ─────────────────────────────── */
+
+/* ── Sensor state ─────────────────────────────────────────────────────
+   BACKEND: This object holds the current frontend state.
+   On page load (DOMContentLoaded below), replace the hardcoded initial
+   values by fetching from GET /api/sensors/latest and GET /api/settings.
+   Example:
+     const res = await fetch('/api/sensors/latest');
+     const live = await res.json();
+     state.moisture    = live.moisture;
+     state.temperature = live.temperature;
+     state.humidity    = live.humidity;
+     state.pumpOn      = live.pump_state;
+     state.dataLogged  = live.data_logged;
+──────────────────────────────────────────────────────────────────────── */
 const state = {
-  moisture:    38.4,
-  temperature: 27.2,
-  humidity:    65.2,
-  pumpOn:      true,
-  dataLogged:  276,
-  cropActive:  'Tomato',
-  pumpCycles:  0,
-  waterUsedML: 0,
-  lastWateredSecs: 0,
-  pumpSeconds: 0,   // counts up while pump is ON
+  moisture:    38.4,      // BACKEND: from sensor, GET /api/sensors/latest
+  temperature: 27.2,      // BACKEND: from sensor, GET /api/sensors/latest
+  humidity:    65.2,      // BACKEND: from sensor, GET /api/sensors/latest
+  pumpOn:      true,      // BACKEND: from relay state, GET /api/pump/status
+  dataLogged:  276,       // BACKEND: from DB count, GET /api/stats/data-logged
+  cropActive:  'Tomato',  // BACKEND: persisted setting, GET /api/settings/crop
+  pumpCycles:  0,         // BACKEND: from DB (today's cycle count), GET /api/pump/cycles
+  waterUsedML: 0,         // BACKEND: from flow meter sensor, GET /api/sensors/flow
+  lastWateredSecs: 0,     // BACKEND: computed from last watered timestamp in DB
+  pumpSeconds: 0,         // BACKEND: cumulative runtime from DB, GET /api/pump/runtime
 };
+
 
 /* ── Chart colours ────────────────────────────── */
 const C_GREEN_MID    = '#3b6d11';
@@ -25,7 +71,17 @@ const C_ORANGE       = '#ba7517';
 const C_GRID         = 'rgba(0,0,0,0.05)';
 const C_TICK         = '#7a9178';
 
-/* ── Crop profiles ────────────────────────────── */
+
+/* ── Crop profiles ────────────────────────────────────────────────────
+   BACKEND: This hardcoded object should be replaced with data fetched
+   from your backend so new crops can be added without touching this file.
+   GET /api/crops  → returns:
+   {
+     "Tomato": [["Daily VW demand","600–1,200 mL"], ...],
+     "Pechay":  [["Daily VW demand","150–300 mL"],  ...]
+   }
+   Then: const CROPS = await fetch('/api/crops').then(r => r.json());
+──────────────────────────────────────────────────────────────────────── */
 const CROPS = {
   Tomato: [
     ['Daily VW demand', '600–1,200 mL'],
@@ -43,6 +99,7 @@ const CROPS = {
   ],
 };
 
+
 /* ── Helpers ──────────────────────────────────── */
 function el(id) { return document.getElementById(id); }
 
@@ -56,6 +113,7 @@ function fmtTime(secs) {
   const m = Math.floor(secs / 60), s = secs % 60;
   return m + ':' + String(s).padStart(2, '0');
 }
+
 
 /* ── Gauge arc update ─────────────────────────── */
 // Arc path length is 195. offset = 195 - (195 * fraction)
@@ -81,22 +139,35 @@ function humStatus(h) {
   return              ['Humid',   'status-humid'];
 }
 
+
 /* ── Moisture badge ───────────────────────────── */
 function moistureBadge(v) {
+  /* BACKEND: This same threshold logic should also live on your backend
+     so the microcontroller/server can make irrigation decisions even
+     when the browser is not open. Mirror this in Python/Node. */
   if (v < 30)  return ['DRY — Approaching Management Allowed Depletion', 'badge-dry'];
   if (v > 70)  return ['ANOXIA RISK — Soil Saturation Dangerously High', 'badge-anoxia'];
   return               ['OPTIMAL — Soil Moisture Within Safe Range',      'badge-optimal'];
 }
 
-/* ── Refresh all cards ────────────────────────── */
+
+/* ── Refresh all cards ────────────────────────────────────────────────
+   BACKEND: This function is the central UI updater.
+   Call it after every API response or WebSocket message that delivers
+   new sensor readings. Replace the state object properties with the
+   values from your API payload before calling refreshCards().
+──────────────────────────────────────────────────────────────────────── */
 function refreshCards() {
   // Soil moisture
+  /* BACKEND: state.moisture should be the latest value from
+     GET /api/sensors/latest or a WebSocket push */
   el('soilMoisture').textContent = state.moisture.toFixed(1) + '%';
   const [bTxt, bCls] = moistureBadge(state.moisture);
   el('moistureBadge').textContent = bTxt;
   el('moistureBadge').className   = 'stat-badge ' + bCls;
 
   // Temperature gauge
+  /* BACKEND: state.temperature from GET /api/sensors/latest */
   el('gaugeTempVal').textContent = state.temperature.toFixed(1);
   setArc('tempArc', tempFraction(state.temperature));
   const [tLabel, tCls] = tempStatus(state.temperature);
@@ -104,6 +175,7 @@ function refreshCards() {
   el('tempStatus').className    = 'gauge-tile-status ' + tCls;
 
   // Humidity gauge
+  /* BACKEND: state.humidity from GET /api/sensors/latest */
   el('gaugeHumVal').textContent = state.humidity.toFixed(1);
   setArc('humArc', humFraction(state.humidity));
   const [hLabel, hCls] = humStatus(state.humidity);
@@ -111,6 +183,9 @@ function refreshCards() {
   el('humStatus').className   = 'gauge-tile-status ' + hCls;
 
   // Pump card
+  /* BACKEND: state.pumpOn reflects the actual relay state.
+     Should be updated from GET /api/pump/status response,
+     or pushed via WebSocket when the relay changes state on the device. */
   const ring   = el('pumpRing');
   const icon   = el('pumpIcon');
   const badge  = el('pumpBadge');
@@ -133,22 +208,47 @@ function refreshCards() {
     if (lbl)  { lbl.textContent = 'OFF'; lbl.style.color = '#a32d2d'; }
   }
 
+  /* BACKEND: state.pumpSeconds should be fetched from DB on load
+     (GET /api/pump/runtime) so it persists across browser refreshes.
+     The ticker below only counts up while the page is open. */
   el('pumpRuntime').textContent = fmtTime(state.pumpSeconds);
+
+  /* BACKEND: state.pumpCycles from GET /api/pump/cycles (today's count) */
   el('pumpCycles').textContent  = state.pumpCycles;
+
+  /* BACKEND: state.dataLogged from GET /api/stats/data-logged */
   el('dataLogged').textContent  = state.dataLogged.toLocaleString() + ' Entries';
 
   // Actuation panel info pills
   const lw = el('lastWatered');
   const wu = el('waterUsed');
+  /* BACKEND: lastWateredSecs computed from ISO timestamp in DB.
+     On load: fetch last_watered timestamp, compute seconds ago, store in state.
+     GET /api/pump/last-watered → { "timestamp": "2025-05-24T10:30:00Z" }
+     waterUsedML from flow meter sensor cumulative total. */
   if (lw) lw.textContent = state.lastWateredSecs === 0 ? 'Just now' : fmtAgo(state.lastWateredSecs);
   if (wu) wu.textContent = state.waterUsedML + ' mL';
 }
 
-/* ── Pump controls ────────────────────────────── */
+
+/* ── Pump controls ────────────────────────────────────────────────────
+   BACKEND: Both functions below need to send HTTP requests to your
+   backend API to actually toggle the physical pump relay.
+──────────────────────────────────────────────────────────────────────── */
 function togglePump() {
   const wasOn = state.pumpOn;
   state.pumpOn = !wasOn;
-  if (!wasOn) state.pumpCycles++;   // count turning ON as a cycle
+  if (!wasOn) state.pumpCycles++;
+
+  /* BACKEND: Send relay command to server.
+     Replace the line below with:
+     fetch('/api/pump/toggle', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ state: state.pumpOn })
+     }).catch(err => console.error('Pump toggle failed:', err));
+  */
+
   refreshCards();
 }
 
@@ -156,6 +256,15 @@ function togglePumpSwitch() {
   const wasOn = state.pumpOn;
   state.pumpOn = el('pumpToggleSwitch').checked;
   if (!wasOn && state.pumpOn) state.pumpCycles++;
+
+  /* BACKEND: Same as togglePump() — send the new state to the relay API.
+     fetch('/api/pump/toggle', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ state: state.pumpOn })
+     });
+  */
+
   refreshCards();
 }
 
@@ -163,7 +272,24 @@ function manualWater() {
   if (!state.pumpOn) state.pumpCycles++;
   state.pumpOn = true;
   state.lastWateredSecs = 0;
-  state.waterUsedML += 200;
+  state.waterUsedML += 200;  // BACKEND: remove this — use real flow meter data
+
+  /* BACKEND: Trigger a timed irrigation cycle on the server.
+     The duration should be read from the pulse duration slider.
+     const duration = document.querySelector('input.agro-range').value;
+     fetch('/api/pump/manual', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ duration_minutes: Number(duration) })
+     }).then(res => res.json())
+       .then(data => {
+         // Optionally update waterUsedML from the server response
+         state.waterUsedML = data.total_water_ml;
+         refreshCards();
+       })
+       .catch(err => console.error('Manual water failed:', err));
+  */
+
   refreshCards();
   const btn  = el('btnManualWater');
   const orig = btn.innerHTML;
@@ -172,8 +298,12 @@ function manualWater() {
   setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 2500);
 }
 
+
 /* ── Crop profile ─────────────────────────────── */
 function renderCrop(name) {
+  /* BACKEND: CROPS[name] is currently hardcoded above.
+     Replace with data fetched from GET /api/crops/:name
+     to allow dynamic crop management from the backend. */
   el('cropParams').innerHTML = CROPS[name].map(([k, v]) =>
     `<div class="param-row">
       <span class="param-key">${k}</span>
@@ -187,10 +317,29 @@ function selectCrop(name) {
   ['Tomato', 'Pechay'].forEach(c => {
     el('tab' + c).classList.toggle('active', c === name);
   });
+
+  /* BACKEND: Persist the selected crop so it restores after page reload.
+     fetch('/api/settings/crop', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({ crop: name })
+     });
+  */
+
   renderCrop(name);
 }
 
-/* ── Mock time-series ─────────────────────────── */
+
+/* ── Mock time-series data ────────────────────────────────────────────
+   BACKEND: This entire function should be replaced with a real API call.
+   GET /api/sensors/moisture/history?hours=24
+   Expected response:
+   {
+     "labels": ["08:00", "09:00", ...],
+     "data":   [42.1, 38.7, ...]
+   }
+   Then pass response directly to buildLineChart() instead of this generator.
+──────────────────────────────────────────────────────────────────────── */
 function genMoistureData(hours) {
   const labels = [], data = [];
   const now = new Date();
@@ -203,10 +352,22 @@ function genMoistureData(hours) {
   return { labels, data };
 }
 
-/* ── Line chart ───────────────────────────────── */
+
+/* ── Line chart ───────────────────────────────────────────────────────
+   BACKEND: buildLineChart() currently calls genMoistureData() for fake data.
+   Replace with:
+   async function buildLineChart(hours = 24) {
+     const res = await fetch(`/api/sensors/moisture/history?hours=${hours}`);
+     const { labels, data } = await res.json();
+     // ...rest of chart build using real labels and data
+   }
+──────────────────────────────────────────────────────────────────────── */
 let lineChart;
 function buildLineChart(hours = 24) {
   const ctx = el('moistureLineChart').getContext('2d');
+  /* BACKEND: Replace genMoistureData(hours) with real API fetch:
+     const { labels, data } = await fetch(`/api/sensors/moisture/history?hours=${hours}`)
+       .then(r => r.json()); */
   const { labels, data } = genMoistureData(hours);
   const n = labels.length;
   if (lineChart) lineChart.destroy();
@@ -217,9 +378,15 @@ function buildLineChart(hours = 24) {
       datasets: [
         { label: 'Soil moisture (%)', data, borderColor: C_GREEN_MID, backgroundColor: C_GREEN_FILL,
           borderWidth: 2, pointRadius: 3, pointBackgroundColor: C_GREEN_MID, fill: true, tension: 0.4 },
-        { label: 'Optimal', data: Array(n).fill(40), borderColor: C_GREEN_MID, borderWidth: 1.5,
+        { label: 'Optimal',
+          /* BACKEND: Replace hardcoded 40 with the current moisture threshold
+             from state or from GET /api/settings */
+          data: Array(n).fill(40), borderColor: C_GREEN_MID, borderWidth: 1.5,
           borderDash: [6,4], pointRadius: 0, fill: false },
-        { label: 'Low threshold', data: Array(n).fill(20), borderColor: C_ORANGE, borderWidth: 1.5,
+        { label: 'Low threshold',
+          /* BACKEND: Replace hardcoded 20 with configurable low threshold
+             from GET /api/settings */
+          data: Array(n).fill(20), borderColor: C_ORANGE, borderWidth: 1.5,
           borderDash: [4,4], pointRadius: 0, fill: false },
       ],
     },
@@ -243,9 +410,18 @@ function buildLineChart(hours = 24) {
   });
 }
 
-/* ── Bar chart ────────────────────────────────── */
+
+/* ── Bar chart ────────────────────────────────────────────────────────
+   BACKEND: avgData[] is hardcoded. Replace with real weekly averages:
+   GET /api/sensors/moisture/weekly-average
+   Expected response: { "days": ["Mon",...], "averages": [45, 55, ...] }
+   Then build the chart from that response instead.
+──────────────────────────────────────────────────────────────────────── */
 function buildBarChart() {
   const ctx     = el('historyBarChart').getContext('2d');
+  /* BACKEND: Replace these two hardcoded arrays with real DB data:
+     const { days, averages } = await fetch('/api/sensors/moisture/weekly-average')
+       .then(r => r.json()); */
   const days    = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const avgData = [45, 55, 38, 62, 50, 47, 53];
   new Chart(ctx, {
@@ -284,9 +460,19 @@ function buildBarChart() {
   });
 }
 
+/* BACKEND: updateRange() is called by the chart time-range selector.
+   When connected to the backend, this should re-fetch historical data
+   with the new time window instead of regenerating mock data. */
 function updateRange(hours) { buildLineChart(Number(hours)); }
 
-/* ── Pump runtime ticker ──────────────────────── */
+
+/* ── Pump runtime ticker ──────────────────────────────────────────────
+   BACKEND: This ticker only counts up while the browser tab is open.
+   For persistent runtime tracking, the server/microcontroller should
+   track total ON-time in the database. On page load, fetch the saved
+   runtime: GET /api/pump/runtime → { "seconds": 3742 }
+   Then set state.pumpSeconds = 3742 before starting this ticker.
+──────────────────────────────────────────────────────────────────────── */
 function startRuntimeTicker() {
   setInterval(() => {
     if (state.pumpOn) {
@@ -296,9 +482,52 @@ function startRuntimeTicker() {
   }, 1000);
 }
 
-/* ── Simulate live sensor data ────────────────── */
+
+/* ── Simulate live sensor data ────────────────────────────────────────
+   BACKEND: THIS ENTIRE FUNCTION SHOULD BE REMOVED when connected to
+   a real backend. It only exists to simulate sensor readings in the
+   absence of real hardware.
+
+   Replace with one of these real-data strategies:
+
+   OPTION A — HTTP Polling (simpler, slight delay):
+   ─────────────────────────────────────────────────
+   function startPolling() {
+     setInterval(async () => {
+       const res  = await fetch('/api/sensors/latest');
+       const live = await res.json();
+       state.moisture    = live.moisture;
+       state.temperature = live.temperature;
+       state.humidity    = live.humidity;
+       state.pumpOn      = live.pump_on;
+       state.dataLogged  = live.data_logged;
+       state.waterUsedML = live.water_used_ml;
+       state.lastWateredSecs = live.last_watered_secs;
+       refreshCards();
+     }, 3000);
+   }
+
+   OPTION B — WebSocket (real-time, recommended for this use case):
+   ─────────────────────────────────────────────────────────────────
+   function connectWebSocket() {
+     const ws = new WebSocket('ws://your-pi-ip:8080/ws');
+     ws.onmessage = (event) => {
+       const live = JSON.parse(event.data);
+       state.moisture    = live.moisture;
+       state.temperature = live.temperature;
+       state.humidity    = live.humidity;
+       state.pumpOn      = live.pump_on;
+       state.dataLogged  = live.data_logged;
+       state.waterUsedML = live.water_used_ml;
+       state.lastWateredSecs = live.last_watered_secs;
+       refreshCards();
+     };
+     ws.onclose = () => setTimeout(connectWebSocket, 3000); // auto-reconnect
+   }
+──────────────────────────────────────────────────────────────────────── */
 function simulateLiveData() {
   setInterval(() => {
+    // BACKEND: Remove all lines below — these are fake sensor updates
     state.moisture    = Math.min(100, Math.max(5,  state.moisture    + (Math.random() * 4 - 2)));
     state.temperature = Math.min(45,  Math.max(15, state.temperature + (Math.random() * 1 - 0.5)));
     state.humidity    = Math.min(100, Math.max(20, state.humidity    + (Math.random() * 2 - 1)));
@@ -306,7 +535,11 @@ function simulateLiveData() {
     state.lastWateredSecs += 3;
     if (state.pumpOn) state.waterUsedML += Math.floor(Math.random() * 15 + 5);
 
-    // Auto pump logic
+    /* BACKEND: Auto pump logic below should live on the microcontroller
+       or server side so irrigation works even without an open browser.
+       Move this threshold check to your backend (Python/Node) and have
+       it directly control the GPIO relay pin. The moisture threshold
+       values (25 / 65) should be read from GET /api/settings, not hardcoded. */
     const wasOn = state.pumpOn;
     if (state.moisture < 25) state.pumpOn = true;
     if (state.moisture > 65) state.pumpOn = false;
@@ -320,12 +553,25 @@ function simulateLiveData() {
   }, 3000);
 }
 
-/* ── Init ─────────────────────────────────────── */
+
+/* ── Init ─────────────────────────────────────────────────────────────
+   BACKEND: On DOMContentLoaded, before calling refreshCards(), you should:
+   1. Fetch current sensor readings:  GET /api/sensors/latest
+   2. Fetch saved settings:           GET /api/settings
+   3. Fetch pump runtime:             GET /api/pump/runtime
+   4. Fetch today's pump cycles:      GET /api/pump/cycles
+   5. Fetch last watered timestamp:   GET /api/pump/last-watered
+   6. Fetch crop list:                GET /api/crops  (to populate CROPS)
+   7. Fetch historical chart data:    GET /api/sensors/moisture/history?hours=24
+   8. Fetch weekly bar chart data:    GET /api/sensors/moisture/weekly-average
+   Then call refreshCards(), renderCrop(), buildLineChart(), buildBarChart().
+   After init, call connectWebSocket() (or startPolling()) instead of simulateLiveData().
+──────────────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   refreshCards();
   renderCrop('Tomato');
   buildLineChart(24);
   buildBarChart();
   startRuntimeTicker();
-  simulateLiveData();
+  simulateLiveData(); // BACKEND: Replace this with connectWebSocket() or startPolling()
 });
