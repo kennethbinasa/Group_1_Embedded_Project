@@ -94,6 +94,9 @@ html, body {
 .badge-anoxia  { background:#fce8e8; color:#791f1f; }
 .badge-on      { background:var(--green-light); color:var(--green-dark); border:1px solid var(--green-soft); }
 .badge-off     { background:#f0f0f0; color:#555; }
+.badge-esp-online  { background:#d4edda; color:#1a5c2e; border:1px solid #a3d5b0; }
+.badge-esp-stale   { background:#fff3cd; color:#7a4f00; border:1px solid #ffd97d; }
+.badge-esp-offline { background:#f0f0f0; color:#888; border:1px solid #d0d0d0; }
 
 /* ── Soil telemetry extras ────────────────────── */
 .vwc-display {

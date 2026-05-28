@@ -233,6 +233,17 @@ function renderCommandState() {
   setManualTargetSelect(cmd.servo.target_crop || state.cropActive);
 }
 
+/* ---- ESP32 connection status ---- */
+function esp32Status() {
+  if (state.esp32LastSeenMs === null) {
+    return { label: 'ESP32: No data', cls: 'badge-esp-offline', icon: 'bi-cpu' };
+  }
+  const ageSecs = Math.floor((Date.now() - state.esp32LastSeenMs) / 1000);
+  if (ageSecs <= 30)  return { label: `ESP32: Online (${ageSecs}s ago)`,  cls: 'badge-esp-online',  icon: 'bi-cpu-fill' };
+  if (ageSecs <= 120) return { label: `ESP32: Stale (${ageSecs}s ago)`,   cls: 'badge-esp-stale',  icon: 'bi-cpu' };
+  return { label: `ESP32: Offline (${Math.floor(ageSecs / 60)}m ago)`, cls: 'badge-esp-offline', icon: 'bi-cpu' };
+}
+
 /* ---- Card updates ---- */
 function refreshCards() {
 
@@ -333,6 +344,13 @@ function refreshCards() {
 
   const waterUsed = el('waterUsed');
   if (waterUsed) waterUsed.textContent = `${state.waterUsedML} mL`;
+
+  // ── ESP32 connection indicator ─────────────────
+  const { label: esp32Label, cls: esp32Cls, icon: esp32Icon } = esp32Status();
+  const esp32Badge  = el('esp32StatusBadge');
+  const esp32Icon2  = el('esp32StatusIcon');
+  if (esp32Badge)  { esp32Badge.textContent = esp32Label; esp32Badge.className = `stat-badge ${esp32Cls}`; }
+  if (esp32Icon2)  esp32Icon2.className = `bi ${esp32Icon} status-icon`;
 }
 
 /* ---- Crop profile ---- */
