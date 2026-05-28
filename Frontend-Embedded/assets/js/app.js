@@ -16,7 +16,8 @@ const state = {
   activeChartCrop: 'Tomato',
   moisturePechay: null,   // set from second sensor channel when available
   commandState: null,
-  esp32LastSeenMs: null
+  esp32LastSeenMs: null,
+  dataReceived: false
 };
 
 /* ---- API / WS config ---- */
@@ -244,16 +245,25 @@ function esp32Status() {
   return { label: `ESP32: Offline (${Math.floor(ageSecs / 60)}m ago)`, cls: 'badge-esp-offline', icon: 'bi-cpu' };
 }
 
+function hasLiveSensorData() {
+  if (!state.dataReceived || state.esp32LastSeenMs === null) return false;
+  const ageMs = Date.now() - state.esp32LastSeenMs;
+  return Number.isFinite(ageMs) && ageMs <= 30000;
+}
+
 /* ---- Card updates ---- */
 function refreshCards() {
+  const showLiveReadings = hasLiveSensorData();
 
   // ── Tomato VWC row ────────────────────────────
   const tValEl = el('soilMoisture');
-  if (tValEl) tValEl.textContent = `${state.moisture.toFixed(1)}%`;
+  if (tValEl) tValEl.textContent = showLiveReadings ? `${state.moisture.toFixed(1)}%` : '—';
 
   const tBadge = el('moistureBadgeTomato');
   if (tBadge) {
-    const [txt, cls] = cropBadgeShort(state.moisture);
+    const [txt, cls] = showLiveReadings
+      ? cropBadgeShort(state.moisture)
+      : ['No data', 'stat-badge vwc-crop-badge badge-off'];
     tBadge.textContent = txt;
     tBadge.className = cls;
   }
@@ -262,7 +272,7 @@ function refreshCards() {
   const pValEl = el('soilMoisturePechay');
   const pBadge = el('moistureBadgePechay');
   if (pValEl && pBadge) {
-    if (state.moisturePechay !== null && state.moisturePechay !== undefined) {
+    if (showLiveReadings && state.moisturePechay !== null && state.moisturePechay !== undefined) {
       pValEl.textContent = `${state.moisturePechay.toFixed(1)}%`;
       pValEl.style.color = 'var(--blue-val)';
       const [pt, pc] = cropBadgeShort(state.moisturePechay);
@@ -277,7 +287,9 @@ function refreshCards() {
   }
 
   // ── Overall soil status badge ─────────────────
-  const [bTxt, bCls] = moistureBadge(state.moisture);
+  const [bTxt, bCls] = showLiveReadings
+    ? moistureBadge(state.moisture)
+    : ['No data', 'badge-off'];
   const moistureBadgeEl = el('moistureBadge');
   if (moistureBadgeEl) {
     moistureBadgeEl.textContent = bTxt;
@@ -286,24 +298,34 @@ function refreshCards() {
 
   // ── Temperature gauge ─────────────────────────
   const tempVal = el('gaugeTempVal');
-  if (tempVal) tempVal.textContent = state.temperature.toFixed(1);
-  setArc('tempArc', tempFraction(state.temperature));
-  const [tLabel, tCls] = tempStatus(state.temperature);
+  if (tempVal) tempVal.textContent = showLiveReadings ? state.temperature.toFixed(1) : '—';
+  setArc('tempArc', showLiveReadings ? tempFraction(state.temperature) : 0);
   const tempStatusEl = el('tempStatus');
   if (tempStatusEl) {
-    tempStatusEl.textContent = tLabel;
-    tempStatusEl.className = `gauge-tile-status ${tCls}`;
+    if (!showLiveReadings) {
+      tempStatusEl.textContent = 'No data';
+      tempStatusEl.className = 'gauge-tile-status';
+    } else {
+      const [tLabel, tCls] = tempStatus(state.temperature);
+      tempStatusEl.textContent = tLabel;
+      tempStatusEl.className = `gauge-tile-status ${tCls}`;
+    }
   }
 
   // ── Humidity gauge ────────────────────────────
   const humVal = el('gaugeHumVal');
-  if (humVal) humVal.textContent = state.humidity.toFixed(1);
-  setArc('humArc', humFraction(state.humidity));
-  const [hLabel, hCls] = humStatus(state.humidity);
+  if (humVal) humVal.textContent = showLiveReadings ? state.humidity.toFixed(1) : '—';
+  setArc('humArc', showLiveReadings ? humFraction(state.humidity) : 0);
   const humStatusEl = el('humStatus');
   if (humStatusEl) {
-    humStatusEl.textContent = hLabel;
-    humStatusEl.className = `gauge-tile-status ${hCls}`;
+    if (!showLiveReadings) {
+      humStatusEl.textContent = 'No data';
+      humStatusEl.className = 'gauge-tile-status';
+    } else {
+      const [hLabel, hCls] = humStatus(state.humidity);
+      humStatusEl.textContent = hLabel;
+      humStatusEl.className = `gauge-tile-status ${hCls}`;
+    }
   }
 
   // ── Pump card ─────────────────────────────────
@@ -405,6 +427,7 @@ async function fetchCommandState() {
 /* ---- Backend data sync ---- */
 function applyLatestReading(latest) {
   if (!latest) return;
+  state.dataReceived = true;
 
   state.temperature  = toNumber(latest.temperature, state.temperature);
   state.humidity     = toNumber(latest.humidity, state.humidity);
@@ -435,6 +458,7 @@ function applyLatestReading(latest) {
 
 function applySensorPush(payload) {
   if (!payload) return;
+  state.dataReceived = true;
   state.temperature = toNumber(payload.temperature, state.temperature);
   state.humidity    = toNumber(payload.humidity, state.humidity);
   state.moisture    = toNumber(payload.moisture ?? payload.soil_moisture, state.moisture);
