@@ -15,7 +15,8 @@ const state = {
   pumpSeconds: 0,
   activeChartCrop: 'Tomato',
   moisturePechay: null,   // set from second sensor channel when available
-  commandState: null
+  commandState: null,
+  esp32LastSeenMs: null
 };
 
 /* ---- API / WS config ---- */
@@ -407,6 +408,11 @@ function applyLatestReading(latest) {
   } else {
     state.lastWateredSecs = Math.max(0, toNumber(latest.last_watered_secs, 0));
   }
+
+  if (latest.recorded_at) {
+    const ts = new Date(latest.recorded_at).getTime();
+    if (Number.isFinite(ts)) state.esp32LastSeenMs = ts;
+  }
 }
 
 function applySensorPush(payload) {
@@ -414,6 +420,7 @@ function applySensorPush(payload) {
   state.temperature = toNumber(payload.temperature, state.temperature);
   state.humidity    = toNumber(payload.humidity, state.humidity);
   state.moisture    = toNumber(payload.moisture ?? payload.soil_moisture, state.moisture);
+  state.esp32LastSeenMs = Date.now();
 
   if (payload.moisture_pechay !== undefined) {
     state.moisturePechay = payload.moisture_pechay === null
