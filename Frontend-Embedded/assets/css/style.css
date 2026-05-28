@@ -222,7 +222,8 @@ html, body {
 }
 .pump-stat {
   flex: 1;
-  display: flex; flex-direction: column;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   padding: 6px 4px;
   gap: 1px;
@@ -296,13 +297,19 @@ html, body {
 
 /* ── Range sliders ────────────────────────────── */
 .agro-range {
-  -webkit-appearance:none; width:100%; height:4px;
-  border-radius:2px; background:#d1e8d1; outline:none; cursor:pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%; height: 4px;
+  border-radius: 2px; background: #d1e8d1;
+  outline: none; cursor: pointer;
 }
 .agro-range::-webkit-slider-thumb {
-  -webkit-appearance:none; width:15px; height:15px;
-  border-radius:50%; background:var(--green-mid); cursor:pointer;
-  box-shadow:0 1px 3px rgba(0,0,0,.15); transition:transform .1s;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px; height: 15px;
+  border-radius: 50%; background: var(--green-mid);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,.15); transition: transform .1s;
 }
 .agro-range::-webkit-slider-thumb:hover { transform:scale(1.15); }
 
@@ -331,7 +338,8 @@ html, body {
 .chart-card {
   background:var(--card-bg); border:1px solid var(--border-color);
   border-radius:var(--card-radius); padding:1.3rem 1.5rem;
-  box-shadow:var(--shadow-sm); height:100%;
+  box-shadow:var(--shadow-sm);
+  height:100%;
 }
 .chart-card-header {
   display:flex; justify-content:space-between; align-items:center;
@@ -352,7 +360,8 @@ html, body {
 .swatch-low     { background:#ba7517; }
 
 /* ── Ambient environment ──────────────────────── */
-.env-divider { width:1px; height:80px; background:var(--border-color); align-self:center; }
+.env-divider { width:1px; height:80px; background:var(--border-color);
+  align-self:center; }
 .comfort-block { min-width:200px; }
 .comfort-title { font-size:.82rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px; }
 .comfort-row { display:flex; align-items:center; gap:12px; margin-bottom:13px; }
@@ -369,7 +378,8 @@ html, body {
   background:var(--card-bg); border:1px solid var(--border-color);
   border-radius:var(--card-radius); padding:.6rem 1.1rem;
   display:flex; align-items:center; gap:.55rem;
-  font-size:.92rem; color:var(--text-muted); box-shadow:var(--shadow-sm);
+  font-size:.92rem;
+  color:var(--text-muted); box-shadow:var(--shadow-sm);
 }
 .status-icon { font-size:1.3rem; color:var(--green-mid); }
 
@@ -391,7 +401,8 @@ html, body {
   align-items: start;
 }
 .actuation-left  { display: flex; flex-direction: column; }
-.actuation-right { display: flex; flex-direction: column; }
+.actuation-right { display: flex;
+  flex-direction: column; }
 .actuation-divider {
   background: var(--border-color);
   width: 1px;
@@ -555,6 +566,8 @@ html, body {
   justify-content: space-between;
   padding: 9px 0;
   border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap; /* Allows row contents to wrap on small widths */
+  gap: 6px; 
 }
 .vwc-crop-row:last-of-type {
   border-bottom: none;
@@ -567,6 +580,7 @@ html, body {
 .vwc-icon-sm {
   font-size: 1.1rem;
   flex-shrink: 0;
+  color: var(--blue-val);
 }
 .vwc-crop-name {
   font-size: .92rem;
@@ -577,17 +591,19 @@ html, body {
   display: flex;
   align-items: center;
   gap: 5px;
+  flex-wrap: wrap; /* Allows the badge to wrap below the value */
+  justify-content: flex-end;
 }
 .vwc-crop-val {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.15rem;
+  font-size: 1rem; /* Number made smaller */
   font-weight: 700;
   color: var(--blue-val);
   min-width: 48px;
   text-align: right;
 }
 .vwc-crop-unit {
-  font-size: .75rem;
+  font-size: .65rem; /* Unit made smaller to match */
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -604,9 +620,22 @@ html, body {
   white-space: nowrap;
 }
 
-/* ── Chart header dual controls ──────────────── */
-.chart-header-controls {
+/* ── VWC status footer inside tile ───────────── */
+.vwc-status-footer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
+}
+.vwc-status-footer .status-label-heading {
+  margin-bottom: 2px;
+}
+.vwc-status-footer .stat-badge {
+  font-size: .78rem;
+  padding: 4px 10px;
+  border-radius: 8px;
+  line-height: 1.4;
+  white-space: normal;
 }

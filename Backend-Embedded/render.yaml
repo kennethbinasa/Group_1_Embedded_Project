@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: agrosense-backend
+    env: docker
+    plan: starter
+    dockerfilePath: ./Backend-Embedded/Dockerfile
+    rootDir: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: INGEST_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agrosense-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: agrosense-realtime
+          property: connectionString
+
+  - type: redis
+    name: agrosense-realtime
+    plan: starter
+
+databases:
+  - name: agrosense-db
+    plan: starter

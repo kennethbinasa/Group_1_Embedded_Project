@@ -96,8 +96,80 @@ Invoke-RestMethod http://localhost:3000/api/data `
 - `GET /api/sensors/moisture/weekly-average`
 - `POST /api/pump/toggle`
 - `POST /api/pump/manual`
+- `GET /api/commands/state`
+- `POST /api/commands/ack`
+- `GET /api/servo/status`
+- `POST /api/servo/target`
 - `GET /api/settings`
 - `POST /api/settings/crop`
+
+## Manual Target Workflow (Servo + Pump)
+
+- Frontend manual override now selects a target crop (`Tomato` or `Pechay`) and sends:
+  - `POST /api/servo/target` with `{ crop, source }`
+  - `POST /api/pump/manual` with `{ duration_minutes, target_crop }`
+- Backend responds with command versions so firmware can reconcile race conditions.
+
+## Firmware Control Versioning (CAP-Safer Control Path)
+
+Each command now carries version metadata:
+
+- `control_version`
+- `pump_command_version`, `pump_ack_version`
+- `servo_command_version`, `servo_ack_version`
+
+Firmware may acknowledge applied commands by sending one or more of:
+
+- `command_ack_version`
+- `pump_ack_version`
+- `servo_ack_version`
+
+on `POST /api/ingest`.
+
+The backend keeps target vs. actual state in `/api/commands/state` to avoid silent UI/firmware divergence.
+
+## ETL Pipeline (Telemetry + Commands)
+
+1. Extract:
+	- ESP32 sends telemetry and command acknowledgements to `POST /api/ingest` every sync cycle.
+2. Transform:
+	- Backend normalizes moisture channels (`moisture1`/`moisture2`), computes aggregate moisture, and computes comfort metrics.
+	- Command versions are incremented and pending/acknowledged state is derived.
+3. Load:
+	- Sensor rows are persisted in SQLite for local use.
+	- Command target/ack metadata is persisted in `settings` for reconciliation.
+	- Realtime updates are broadcast via WebSocket.
+
+## CAP Strategy
+
+- Telemetry path: prioritize Availability + Partition tolerance (eventual consistency acceptable for dashboard readings).
+- Control path: prioritize Consistency for actuator commands (versioned target/ack state, explicit reconciliation).
+- Result: safer behavior during temporary network partitions or delayed firmware sync cycles.
+
+## Production Deployment Split
+
+### Frontend (Vercel)
+
+- Deploy `Frontend-Embedded/` as a static site.
+- `Frontend-Embedded/vercel.json` is included.
+- Set runtime API base in `Frontend-Embedded/assets/js/runtime-config.js`:
+
+```js
+window.AGROSENSE_API_BASE = 'https://your-backend-domain.example.com';
+```
+
+### Backend (Stateful Service)
+
+- Keep backend on a stateful host (Render/Fly/Railway/ECS), not Vercel serverless.
+- Included files:
+  - `Backend-Embedded/Dockerfile`
+  - `Backend-Embedded/render.yaml` (service + managed PostgreSQL + Redis blueprint)
+
+### Managed Data + Realtime (Production)
+
+- Managed database (PostgreSQL) for durable writes.
+- Managed realtime broker (Redis/pubsub + websocket gateway) for fanout.
+- Keep `/health` checks and ingest API key (`INGEST_API_KEY`) in production.
 
 ## Stop Server
 

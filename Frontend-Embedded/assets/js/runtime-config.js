@@ -1,0 +1,1 @@
+window.AGROSENSE_API_BASE = window.AGROSENSE_API_BASE || '';
