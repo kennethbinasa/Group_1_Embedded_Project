@@ -3,8 +3,8 @@ services:
     name: agrosense-backend
     env: docker
     plan: free
-    dockerfilePath: ./Dockerfile
-    rootDir: Backend-Embedded
+    dockerfilePath: ./Backend-Embedded/Dockerfile
+    rootDir: .
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
