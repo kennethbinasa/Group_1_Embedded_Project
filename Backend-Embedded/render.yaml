@@ -2,7 +2,7 @@ services:
   - type: web
     name: agrosense-backend
     env: docker
-    plan: starter
+    plan: free
     dockerfilePath: ./Backend-Embedded/Dockerfile
     rootDir: .
     healthCheckPath: /health
@@ -13,21 +13,3 @@ services:
         value: "3000"
       - key: INGEST_API_KEY
         sync: false
-      - key: DATABASE_URL
-        fromDatabase:
-          name: agrosense-db
-          property: connectionString
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: agrosense-realtime
-          property: connectionString
-
-  - type: redis
-    name: agrosense-realtime
-    plan: starter
-    ipAllowList: []
-
-databases:
-  - name: agrosense-db
-    plan: starter
