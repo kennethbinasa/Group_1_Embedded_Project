@@ -23,9 +23,10 @@ services:
           name: agrosense-realtime
           property: connectionString
 
-  - type: redis
-    name: agrosense-realtime
-    plan: starter
+    - type: redis
+      name: agrosense-realtime
+      plan: starter
+      ipAllowList: []
 
 databases:
   - name: agrosense-db
