@@ -498,3 +498,115 @@ html, body {
 .status-bar-tall .status-icon {
   font-size: 1.5rem;
 }
+
+/* ── Multi-crop VWC rows ──────────────────────── */
+.crop-vwc-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.crop-vwc-row:last-of-type {
+  border-bottom: none;
+}
+.crop-vwc-dot {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.crop-vwc-name {
+  font-size: .92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+.crop-vwc-dashes {
+  font-size: .8rem;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+.crop-vwc-val {
+  font-size: .88rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 60px;
+  text-align: right;
+}
+.crop-vwc-val.has-data {
+  color: var(--blue-val);
+}
+.vwc-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 8px 0 6px;
+}
+
+/* ── Chart header with two dropdowns ─────────── */
+.chart-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── VWC dual-crop rows ───────────────────────── */
+.vwc-crop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+.vwc-crop-row:last-of-type {
+  border-bottom: none;
+}
+.vwc-crop-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.vwc-icon-sm {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.vwc-crop-name {
+  font-size: .92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.vwc-crop-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.vwc-crop-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--blue-val);
+  min-width: 48px;
+  text-align: right;
+}
+.vwc-crop-unit {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.vwc-crop-dashes {
+  font-size: .78rem;
+  color: var(--green-mid);
+  letter-spacing: 1px;
+  opacity: .6;
+}
+.vwc-crop-badge {
+  font-size: .68rem !important;
+  padding: 2px 8px !important;
+  border-radius: 20px !important;
+  white-space: nowrap;
+}
+
+/* ── Chart header dual controls ──────────────── */
+.chart-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

@@ -22,31 +22,16 @@
 
   <main class="container-fluid px-4 py-4">
 
-    <!-- ═══════════════════════════════════════════════════════════
-         STAT CARDS
-         BACKEND: All values in these cards are populated dynamically
-         by refreshCards() in app.js, which should be fed real data
-         from your API/WebSocket instead of the simulated state object.
-    ════════════════════════════════════════════════════════════════ -->
+    <!-- STAT CARDS -->
     <div class="row g-3 mb-3 align-items-stretch">
 
-      <!-- ─── Soil Telemetry Card ──────────────────────────────────
-           BACKEND:
-           - id="soilMoisture"   → Replace with live VWC reading from
-             soil moisture sensor (e.g. capacitive sensor via Arduino/
-             Raspberry Pi). API endpoint: GET /api/sensors/moisture
-           - id="moistureBadge"  → Badge text & class are computed from
-             the moisture value. Logic lives in moistureBadge() in app.js.
-             Keep the same logic on the backend for server-side rendering fallback.
-      ──────────────────────────────────────────────────────────── -->
+      <!-- Soil Telemetry -->
       <div class="col-6 col-md-3 d-flex">
         <div class="stat-card w-100 vwc-card">
           <div class="stat-label"><i class="bi bi-droplet me-1"></i>Soil Telemetry</div>
           <div class="vwc-display">
             <i class="bi bi-droplet-fill vwc-icon"></i>
             <span class="vwc-number" id="soilMoisture">38.4%</span>
-            <!-- BACKEND: Initial value is a placeholder. Replaced on
-                 first API response or WebSocket push. -->
             <span class="vwc-unit">VWC</span>
           </div>
           <div class="status-label-heading">Dynamic Soil Status Label</div>
@@ -54,22 +39,13 @@
         </div>
       </div>
 
-      <!-- ─── Temperature Gauge Card ───────────────────────────────
-           BACKEND:
-           - id="gaugeTempVal"  → Live temperature from DHT22 / DS18B20
-             or similar sensor. API endpoint: GET /api/sensors/temperature
-           - id="tempArc"       → SVG arc offset is recalculated by
-             setArc() in app.js based on the temperature value.
-           - id="tempStatus"    → Text label (Cool/Mild/Warm/Hot) derived
-             from tempStatus() helper. Can also be computed server-side.
-      ──────────────────────────────────────────────────────────── -->
+      <!-- Temperature gauge -->
       <div class="col-6 col-md-3 d-flex">
         <div class="stat-card w-100 stat-card-gauge">
           <div class="stat-label"><i class="bi bi-thermometer-half me-1"></i>Temperature</div>
           <div class="gauge-tile-wrap">
             <svg class="gauge-svg" viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg">
               <path d="M18 90 A62 62 0 0 1 142 90" fill="none" stroke="#f0f0ee" stroke-width="14" stroke-linecap="round"/>
-              <!-- BACKEND: stroke-dashoffset is updated by setArc('tempArc', fraction) -->
               <path id="tempArc" d="M18 90 A62 62 0 0 1 142 90" fill="none" stroke="#e24b4a"
                     stroke-width="14" stroke-linecap="round" stroke-dasharray="195" stroke-dashoffset="97"/>
               <text id="gaugeTempVal" x="80" y="82" text-anchor="middle"
@@ -84,20 +60,13 @@
         </div>
       </div>
 
-      <!-- ─── Humidity Gauge Card ───────────────────────────────────
-           BACKEND:
-           - id="gaugeHumVal"  → Live relative humidity from DHT22 or
-             SHT31 sensor. API endpoint: GET /api/sensors/humidity
-           - id="humArc"       → SVG arc updated by setArc('humArc', fraction)
-           - id="humStatus"    → Label computed from humStatus() in app.js
-      ──────────────────────────────────────────────────────────── -->
+      <!-- Humidity gauge -->
       <div class="col-6 col-md-3 d-flex">
         <div class="stat-card w-100 stat-card-gauge">
           <div class="stat-label"><i class="bi bi-cloud me-1"></i>Humidity</div>
           <div class="gauge-tile-wrap">
             <svg class="gauge-svg" viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg">
               <path d="M18 90 A62 62 0 0 1 142 90" fill="none" stroke="#f0f0ee" stroke-width="14" stroke-linecap="round"/>
-              <!-- BACKEND: stroke-dashoffset is updated by setArc('humArc', fraction) -->
               <path id="humArc" d="M18 90 A62 62 0 0 1 142 90" fill="none" stroke="#378add"
                     stroke-width="14" stroke-linecap="round" stroke-dasharray="195" stroke-dashoffset="68"/>
               <text id="gaugeHumVal" x="80" y="82" text-anchor="middle"
@@ -112,17 +81,7 @@
         </div>
       </div>
 
-      <!-- ─── Pump Status Card ─────────────────────────────────────
-           BACKEND:
-           - id="pumpBadge"    → Reflects actual pump relay state.
-             Read from: GET /api/pump/status
-           - id="pumpRing"     → CSS class toggled by JS based on pump state.
-           - id="pumpRuntime"  → Cumulative ON-time in seconds. Should be
-             persisted in the database and fetched on page load so it
-             doesn't reset on refresh. GET /api/pump/runtime
-           - id="pumpCycles"   → Number of ON/OFF cycles today. Store in DB,
-             reset at midnight. GET /api/pump/cycles
-      ──────────────────────────────────────────────────────────── -->
+      <!-- Pump Status -->
       <div class="col-6 col-md-3 d-flex">
         <div class="stat-card w-100 pump-card">
           <div class="stat-label"><i class="bi bi-activity me-1"></i>Pump Status</div>
@@ -148,43 +107,23 @@
 
     </div><!-- /stat cards -->
 
-    <!-- ═══════════════════════════════════════════════════════════
-         ACTUATION & CROP PROFILE
-    ════════════════════════════════════════════════════════════════ -->
+    <!-- ACTUATION + CROP PROFILE -->
     <div class="row g-3 mb-3">
       <div class="col-12 col-md-8">
         <div class="panel-card">
           <div class="panel-title"><i class="bi bi-sliders me-2"></i>Live actuation &amp; control</div>
           <div class="actuation-grid">
 
-            <!-- ─── Pump Toggle & Manual Override ────────────────────
-                 BACKEND:
-                 - Pump toggle (id="pumpToggleSwitch") → on change, send:
-                   POST /api/pump/toggle  { "state": true/false }
-                   Backend should write to GPIO (relay pin) and log the
-                   event with a timestamp to the DB.
-                 - Manual override button → triggers:
-                   POST /api/pump/manual  { "duration": <pulseSeconds> }
-                   The duration value should be taken from the pulse
-                   duration slider below before sending.
-                 - id="lastWatered" → Fetch from DB on load:
-                   GET /api/pump/last-watered  (returns ISO timestamp)
-                 - id="waterUsed"   → Cumulative flow from flow meter
-                   sensor (e.g. YF-S201). GET /api/sensors/flow
-            ──────────────────────────────────────────────────────── -->
+            <!-- Left: toggle + button + info pills -->
             <div class="actuation-left">
               <div class="ctrl-label mb-2">Pump toggle</div>
               <div class="d-flex align-items-center gap-2 mb-3">
                 <label class="agro-toggle">
-                  <!-- BACKEND: Set 'checked' attribute based on pump state
-                       fetched from GET /api/pump/status on page load -->
                   <input type="checkbox" id="pumpToggleSwitch" checked onchange="togglePumpSwitch()">
                   <span class="agro-slider"></span>
                 </label>
                 <span class="toggle-state-label" id="toggleLabel">ON</span>
               </div>
-              <!-- BACKEND: This button calls manualWater() which should
-                   send a POST request to trigger the pump relay directly -->
               <button class="btn-agro btn-water w-100 mb-3" id="btnManualWater" onclick="manualWater()">
                 <i class="bi bi-play-fill me-1"></i>Manual override
               </button>
@@ -192,7 +131,6 @@
                 <div class="act-pill">
                   <span class="act-pill-icon"><i class="bi bi-clock-history"></i></span>
                   <div>
-                    <!-- BACKEND: Populated from GET /api/pump/last-watered -->
                     <div class="act-pill-val" id="lastWatered">Just now</div>
                     <div class="act-pill-key">Last watered</div>
                   </div>
@@ -200,8 +138,6 @@
                 <div class="act-pill">
                   <span class="act-pill-icon"><i class="bi bi-droplet-half"></i></span>
                   <div>
-                    <!-- BACKEND: Accumulated mL from flow meter sensor.
-                         GET /api/sensors/flow  or pushed via WebSocket -->
                     <div class="act-pill-val" id="waterUsed">0 mL</div>
                     <div class="act-pill-key">Water used</div>
                   </div>
@@ -209,32 +145,17 @@
               </div>
             </div>
 
+            <!-- Divider -->
             <div class="actuation-divider"></div>
 
-            <!-- ─── Control Sliders ──────────────────────────────────
-                 BACKEND:
-                 - Pulse duration slider → value sent with:
-                   POST /api/settings/pulse-duration  { "minutes": <val> }
-                   Also read on page load: GET /api/settings
-                   to restore the last saved value.
-                 - PWM flow rate slider  → controls pump speed via PWM signal.
-                   POST /api/pump/pwm  { "duty_cycle": <0-100> }
-                   On the hardware side, this maps to a PWM GPIO output
-                   connected to the pump motor driver.
-                 - Moisture threshold slider → the VWC level that auto-triggers
-                   the pump. POST /api/settings/moisture-threshold { "vwc": <val> }
-                   This value is also used by the backend auto-pump logic
-                   (replaces the JS check: if moisture < 25 → pump ON).
-                   Store in DB so it persists across reboots.
-            ──────────────────────────────────────────────────────── -->
+            <!-- Right: sliders -->
             <div class="actuation-right">
               <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <span class="ctrl-label"><i class="bi bi-stopwatch me-1"></i>Pulse duration</span>
                   <span class="ctrl-val" id="durVal">30 min</span>
                 </div>
-                <!-- BACKEND: On 'change' (not 'input') debounce and POST new value -->
-                <input type="range" class="agro-range" min="5" max="120" step="5" value="30"
+                  <input id="rangePulseDuration" type="range" class="agro-range" min="5" max="120" step="5" value="30"
                        oninput="document.getElementById('durVal').textContent=this.value+' min'">
                 <div class="range-hint">5 min &nbsp;&middot;&nbsp; max 120 min</div>
               </div>
@@ -243,9 +164,7 @@
                   <span class="ctrl-label"><i class="bi bi-speedometer me-1"></i>PWM flow rate</span>
                   <span class="ctrl-val" id="pwmVal">65%</span>
                 </div>
-                <!-- BACKEND: Maps directly to GPIO PWM duty cycle.
-                     POST /api/pump/pwm on slider release (use 'change' event) -->
-                <input type="range" class="agro-range" min="0" max="100" step="1" value="65"
+                  <input id="rangePwm" type="range" class="agro-range" min="0" max="100" step="1" value="65"
                        oninput="document.getElementById('pwmVal').textContent=this.value+'%'">
                 <div class="range-hint">0% = off &nbsp;&middot;&nbsp; 100% = full flow</div>
               </div>
@@ -254,11 +173,7 @@
                   <span class="ctrl-label"><i class="bi bi-moisture me-1"></i>Moisture threshold</span>
                   <span class="ctrl-val" id="threshVal">30%</span>
                 </div>
-                <!-- BACKEND: This threshold is currently checked in JS (simulateLiveData).
-                     Move the check to the backend/microcontroller so irrigation
-                     still triggers even when the browser is closed.
-                     POST /api/settings/moisture-threshold on change. -->
-                <input type="range" class="agro-range agro-range-warn" min="10" max="60" step="1" value="30"
+                  <input id="rangeMoistureThreshold" type="range" class="agro-range agro-range-warn" min="10" max="60" step="1" value="30"
                        oninput="document.getElementById('threshVal').textContent=this.value+'%'">
                 <div class="range-hint">Pump triggers below this VWC level</div>
               </div>
@@ -268,17 +183,7 @@
         </div>
       </div>
 
-      <!-- ─── Crop Profile Panel ────────────────────────────────────
-           BACKEND:
-           - Crop tabs (Tomato / Pechay) → the active crop can be stored
-             per-user or per-device in the DB. On load, fetch:
-             GET /api/settings/crop  → returns { "crop": "Tomato" }
-           - selectCrop() → should also persist the selection:
-             POST /api/settings/crop  { "crop": "Tomato" }
-           - The CROPS data object in app.js can be served from the backend
-             to allow adding new crop types without redeploying the frontend:
-             GET /api/crops  → returns array of crop profiles
-      ──────────────────────────────────────────────────────────── -->
+      <!-- Crop Profile -->
       <div class="col-12 col-md-4">
         <div class="panel-card h-100">
           <div class="panel-title"><i class="bi bi-flower2 me-2"></i>Crop profile</div>
@@ -286,43 +191,24 @@
             <button class="crop-tab active" id="tabTomato" onclick="selectCrop('Tomato')">Tomato</button>
             <button class="crop-tab" id="tabPechay" onclick="selectCrop('Pechay')">Pechay</button>
           </div>
-          <!-- BACKEND: id="cropParams" is rendered by renderCrop() in JS.
-               Crop data can come from GET /api/crops/:name instead of
-               the hardcoded CROPS object in app.js -->
           <div id="cropParams"></div>
         </div>
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         CHARTS
-         BACKEND:
-         - Line chart data → replace genMoistureData() mock with real
-           historical readings from DB.
-           GET /api/sensors/moisture/history?hours=24
-           Response: { labels: [...], data: [...] }
-         - Bar chart data → weekly averages from DB.
-           GET /api/sensors/moisture/weekly-average
-           Response: { days: ['Mon',...], averages: [45,...] }
-         - Range selector (Last 24h / 12h / 7 days) → calls updateRange()
-           which should re-fetch from the API with the new time window.
-    ════════════════════════════════════════════════════════════════ -->
+    <!-- CHARTS -->
     <div class="row g-3 mb-3">
       <div class="col-12 col-md-7">
         <div class="chart-card">
           <div class="chart-card-header">
             <span><i class="bi bi-graph-up chart-icon me-1"></i>Soil moisture levels</span>
-            <!-- BACKEND: onChange triggers updateRange() → should call API
-                 with the selected time window instead of regenerating mock data -->
             <select class="range-select" onchange="updateRange(this.value)">
               <option value="24">Last 24 hours</option>
               <option value="12">Last 12 hours</option>
-              <option value="7">Last 7 days</option>
+              <option value="168">Last 7 days</option>
             </select>
           </div>
           <div class="chart-wrapper">
-            <!-- BACKEND: Canvas populated by buildLineChart() in app.js.
-                 Feed it real sensor history data from the API. -->
             <canvas id="moistureLineChart"></canvas>
           </div>
           <div class="chart-legend mt-2">
@@ -338,73 +224,46 @@
           </div>
           <p class="chart-sub">Avg. moisture levels</p>
           <div class="chart-wrapper">
-            <!-- BACKEND: Canvas populated by buildBarChart() in app.js.
-                 Replace mock avgData[] with GET /api/sensors/moisture/weekly-average -->
             <canvas id="historyBarChart"></canvas>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════
-         AMBIENT ENVIRONMENT
-         BACKEND:
-         - "Heat stress risk" bar → computed from temperature + humidity
-           (Heat Index formula). Can be calculated backend-side and returned
-           as a percentage: GET /api/environment/comfort-index
-         - "Evapotranspiration" bar → calculated using FAO Penman-Monteith
-           or simplified formula using temp, humidity, wind, and solar data.
-           GET /api/environment/evapotranspiration
-         - "Fungal risk" bar → derived from humidity + temperature thresholds.
-           Backend computes and returns a risk percentage.
-           These values are currently static in the HTML — they should be
-           dynamically updated alongside sensor readings.
-    ════════════════════════════════════════════════════════════════ -->
+    <!-- AMBIENT ENVIRONMENT + STATUS FOOTER — same row -->
     <div class="row g-3 mb-2 align-items-stretch">
 
+      <!-- Ambient card -->
       <div class="col-12 col-md-6 col-lg-5 d-flex">
         <div class="panel-card ambient-compact w-100">
           <div class="panel-title"><i class="bi bi-speedometer2 me-2"></i>Ambient environment</div>
           <div class="comfort-title">Comfort index</div>
-          <!-- BACKEND: All three bar widths and status labels below are
-               currently hardcoded. Wire them to computed values from
-               GET /api/environment/comfort-index -->
           <div class="comfort-row">
             <span class="comfort-key">Heat stress risk</span>
-            <div class="comfort-bar-wrap"><div class="comfort-bar" style="width:55%;background:#ef9f27"></div></div>
-            <span class="comfort-status status-moderate-text">Moderate</span>
+            <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortHeatBar" style="width:55%;background:#ef9f27"></div></div>
+            <span class="comfort-status status-moderate-text" id="comfortHeatStatus">Moderate</span>
           </div>
           <div class="comfort-row">
             <span class="comfort-key">Evapotranspiration</span>
-            <div class="comfort-bar-wrap"><div class="comfort-bar" style="width:28%;background:#3b6d11"></div></div>
-            <span class="comfort-status status-low-text">Low</span>
+            <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortEtBar" style="width:28%;background:#3b6d11"></div></div>
+            <span class="comfort-status status-low-text" id="comfortEtStatus">Low</span>
           </div>
           <div class="comfort-row">
             <span class="comfort-key">Fungal risk</span>
-            <div class="comfort-bar-wrap"><div class="comfort-bar" style="width:70%;background:#7f77dd"></div></div>
-            <span class="comfort-status status-elevated-text">Elevated</span>
+            <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortFungalBar" style="width:70%;background:#7f77dd"></div></div>
+            <span class="comfort-status status-elevated-text" id="comfortFungalStatus">Elevated</span>
           </div>
         </div>
       </div>
 
-      <!-- ─── Status Footer Bars ────────────────────────────────────
-           BACKEND:
-           - "AgroSense Network" → Replace hardcoded text with actual
-             device/network name from GET /api/device/info
-             Could also show connection health (ping, signal strength).
-           - id="dataLogged" → Total sensor readings stored in DB.
-             GET /api/stats/data-logged  → { "count": 276 }
-             Currently incremented by JS every 3s; should reflect true DB count.
-      ──────────────────────────────────────────────────────────── -->
+      <!-- Status bars stacked beside ambient -->
       <div class="col-12 col-md-6 col-lg-7 d-flex flex-column gap-3">
         <div class="status-bar status-bar-tall">
           <i class="bi bi-wifi status-icon"></i>
-          <!-- BACKEND: Device name and connection status from GET /api/device/info -->
           <span>Connected to: <strong>AgroSense Network</strong></span>
         </div>
         <div class="status-bar status-bar-tall">
           <i class="bi bi-database-fill status-icon"></i>
-          <!-- BACKEND: True DB entry count from GET /api/stats/data-logged -->
           <span>Data logged: <strong id="dataLogged">276 Entries</strong></span>
         </div>
       </div>
