@@ -13,16 +13,25 @@ const state = {
   waterUsedML: 0,
   lastWateredSecs: null,
   pumpSeconds: 0,
-  activeChartCrop: 'Tomato'
+  activeChartCrop: 'Tomato',
+  moisturePechay: null,   // set from second sensor channel when available
+  commandState: null,
+  esp32LastSeenMs: null
 };
 
 /* ---- API / WS config ---- */
 const API_BASE = (() => {
+  const runtimeBase = String(window.AGROSENSE_API_BASE || '').trim();
+  if (runtimeBase.length > 0) {
+    return runtimeBase.replace(/\/$/, '');
+  }
+
   if (window.location.protocol === 'file:') return 'http://localhost:3000';
   const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
   const host = window.location.hostname || 'localhost';
   return `${protocol}//${host}:3000`;
 })();
+
 const WS_URL = API_BASE.replace(/^http/, 'ws');
 
 /* ---- Chart colours ---- */
@@ -150,11 +159,16 @@ function moistureBadge(v) {
   return ['OPTIMAL - Soil Moisture Within Safe Range', 'badge-optimal'];
 }
 
+function cropBadgeShort(v) {
+  if (v < 30) return ['Dry',     'stat-badge vwc-crop-badge badge-dry'];
+  if (v > 70) return ['Anoxia',  'stat-badge vwc-crop-badge badge-anoxia'];
+  return              ['Optimal', 'stat-badge vwc-crop-badge badge-optimal'];
+}
+
 function setControlDisplayValues() {
   const pulseRange = el('rangePulseDuration');
   const pwmRange = el('rangePwm');
   const thresholdRange = el('rangeMoistureThreshold');
-
   if (pulseRange) el('durVal').textContent = `${pulseRange.value} min`;
   if (pwmRange) el('pwmVal').textContent = `${pwmRange.value}%`;
   if (thresholdRange) el('threshVal').textContent = `${thresholdRange.value}%`;
@@ -185,11 +199,84 @@ function setComfortRow(barId, statusId, value, color) {
   }
 }
 
+function setManualTargetSelect(crop) {
+  const select = el('manualTargetCrop');
+  if (!select) return;
+  if (crop === 'Tomato' || crop === 'Pechay') {
+    select.value = crop;
+  }
+}
+
+function renderCommandState() {
+  const label = el('commandSyncState');
+  const detail = el('commandVersionState');
+  const cmd = state.commandState;
+
+  if (!label || !detail) return;
+  if (!cmd || !cmd.servo || !cmd.pump) {
+    label.textContent = 'Control sync: unavailable';
+    detail.textContent = 'Servo v0/ack0 · Pump v0/ack0';
+    return;
+  }
+
+  const pendingParts = [];
+  if (cmd.servo.pending) pendingParts.push('servo pending');
+  if (cmd.pump.pending) pendingParts.push('pump pending');
+
+  if (pendingParts.length > 0) {
+    label.textContent = `Control sync: ${pendingParts.join(', ')}`;
+  } else {
+    label.textContent = 'Control sync: acknowledged';
+  }
+
+  detail.textContent = `Servo v${cmd.servo.command_version}/ack${cmd.servo.ack_version} · Pump v${cmd.pump.command_version}/ack${cmd.pump.ack_version}`;
+  setManualTargetSelect(cmd.servo.target_crop || state.cropActive);
+}
+
+/* ---- ESP32 connection status ---- */
+function esp32Status() {
+  if (state.esp32LastSeenMs === null) {
+    return { label: 'ESP32: No data', cls: 'badge-esp-offline', icon: 'bi-cpu' };
+  }
+  const ageSecs = Math.floor((Date.now() - state.esp32LastSeenMs) / 1000);
+  if (ageSecs <= 30)  return { label: `ESP32: Online (${ageSecs}s ago)`,  cls: 'badge-esp-online',  icon: 'bi-cpu-fill' };
+  if (ageSecs <= 120) return { label: `ESP32: Stale (${ageSecs}s ago)`,   cls: 'badge-esp-stale',  icon: 'bi-cpu' };
+  return { label: `ESP32: Offline (${Math.floor(ageSecs / 60)}m ago)`, cls: 'badge-esp-offline', icon: 'bi-cpu' };
+}
+
 /* ---- Card updates ---- */
 function refreshCards() {
-  const moisture = el('soilMoisture');
-  if (moisture) moisture.textContent = `${state.moisture.toFixed(1)}%`;
 
+  // ── Tomato VWC row ────────────────────────────
+  const tValEl = el('soilMoisture');
+  if (tValEl) tValEl.textContent = `${state.moisture.toFixed(1)}%`;
+
+  const tBadge = el('moistureBadgeTomato');
+  if (tBadge) {
+    const [txt, cls] = cropBadgeShort(state.moisture);
+    tBadge.textContent = txt;
+    tBadge.className = cls;
+  }
+
+  // ── Pechay VWC row ────────────────────────────
+  const pValEl = el('soilMoisturePechay');
+  const pBadge = el('moistureBadgePechay');
+  if (pValEl && pBadge) {
+    if (state.moisturePechay !== null && state.moisturePechay !== undefined) {
+      pValEl.textContent = `${state.moisturePechay.toFixed(1)}%`;
+      pValEl.style.color = 'var(--blue-val)';
+      const [pt, pc] = cropBadgeShort(state.moisturePechay);
+      pBadge.textContent = pt;
+      pBadge.className = pc;
+    } else {
+      pValEl.textContent = '— %';
+      pValEl.style.color = 'var(--text-muted)';
+      pBadge.textContent = 'No data';
+      pBadge.className = 'stat-badge vwc-crop-badge badge-off';
+    }
+  }
+
+  // ── Overall soil status badge ─────────────────
   const [bTxt, bCls] = moistureBadge(state.moisture);
   const moistureBadgeEl = el('moistureBadge');
   if (moistureBadgeEl) {
@@ -197,6 +284,7 @@ function refreshCards() {
     moistureBadgeEl.className = `stat-badge ${bCls}`;
   }
 
+  // ── Temperature gauge ─────────────────────────
   const tempVal = el('gaugeTempVal');
   if (tempVal) tempVal.textContent = state.temperature.toFixed(1);
   setArc('tempArc', tempFraction(state.temperature));
@@ -207,6 +295,7 @@ function refreshCards() {
     tempStatusEl.className = `gauge-tile-status ${tCls}`;
   }
 
+  // ── Humidity gauge ────────────────────────────
   const humVal = el('gaugeHumVal');
   if (humVal) humVal.textContent = state.humidity.toFixed(1);
   setArc('humArc', humFraction(state.humidity));
@@ -217,36 +306,27 @@ function refreshCards() {
     humStatusEl.className = `gauge-tile-status ${hCls}`;
   }
 
-  const ring = el('pumpRing');
-  const icon = el('pumpIcon');
-  const badge = el('pumpBadge');
+  // ── Pump card ─────────────────────────────────
+  const ring   = el('pumpRing');
+  const icon   = el('pumpIcon');
+  const badge  = el('pumpBadge');
   const toggle = el('pumpToggleSwitch');
-  const lbl = el('toggleLabel');
-
+  const lbl    = el('toggleLabel');
   if (state.pumpOn) {
-    if (ring) ring.className = 'pump-ring ring-on';
-    if (icon) icon.className = 'bi bi-power pump-icon-big pump-on-color';
-    if (badge) {
-      badge.textContent = 'Pump: ON';
-      badge.className = 'stat-badge badge-on';
-    }
-    if (toggle) toggle.checked = true;
-    if (lbl) {
-      lbl.textContent = 'ON';
-      lbl.style.color = '#3b6d11';
+    if (ring)   ring.className  = 'pump-ring ring-on';
+    if (icon)   icon.className  = 'bi bi-power pump-icon-big pump-on-color';
+    if (badge)  { badge.textContent = 'Pump: ON';
+      badge.className = 'stat-badge badge-on'; }
+    if (toggle) toggle.checked  = true;
+    if (lbl)    { lbl.textContent = 'ON';  lbl.style.color = '#3b6d11';
     }
   } else {
-    if (ring) ring.className = 'pump-ring ring-off';
-    if (icon) icon.className = 'bi bi-power pump-icon-big pump-off-color';
-    if (badge) {
-      badge.textContent = 'Pump: OFF';
-      badge.className = 'stat-badge badge-off';
-    }
-    if (toggle) toggle.checked = false;
-    if (lbl) {
-      lbl.textContent = 'OFF';
-      lbl.style.color = '#a32d2d';
-    }
+    if (ring)   ring.className  = 'pump-ring ring-off';
+    if (icon)   icon.className  = 'bi bi-power pump-icon-big pump-off-color';
+    if (badge)  { badge.textContent = 'Pump: OFF';
+      badge.className = 'stat-badge badge-off'; }
+    if (toggle) toggle.checked  = false;
+    if (lbl)    { lbl.textContent = 'OFF'; lbl.style.color = '#a32d2d'; }
   }
 
   const runtime = el('pumpRuntime');
@@ -255,6 +335,7 @@ function refreshCards() {
   const cycles = el('pumpCycles');
   if (cycles) cycles.textContent = String(state.pumpCycles);
 
+  // ── Footer ────────────────────────────────────
   const dataLogged = el('dataLogged');
   if (dataLogged) dataLogged.textContent = `${state.dataLogged.toLocaleString()} Entries`;
 
@@ -263,13 +344,19 @@ function refreshCards() {
 
   const waterUsed = el('waterUsed');
   if (waterUsed) waterUsed.textContent = `${state.waterUsedML} mL`;
+
+  // ── ESP32 connection indicator ─────────────────
+  const { label: esp32Label, cls: esp32Cls, icon: esp32Icon } = esp32Status();
+  const esp32Badge  = el('esp32StatusBadge');
+  const esp32Icon2  = el('esp32StatusIcon');
+  if (esp32Badge)  { esp32Badge.textContent = esp32Label; esp32Badge.className = `stat-badge ${esp32Cls}`; }
+  if (esp32Icon2)  esp32Icon2.className = `bi ${esp32Icon} status-icon`;
 }
 
 /* ---- Crop profile ---- */
 function renderCrop(name) {
   const root = el('cropParams');
   if (!root || !CROPS[name]) return;
-
   root.innerHTML = CROPS[name]
     .map(
       ([k, v]) =>
@@ -281,13 +368,17 @@ function renderCrop(name) {
 async function selectCrop(name, persist = true) {
   state.cropActive = name;
   state.activeChartCrop = name;
-
   ['Tomato', 'Pechay'].forEach((c) => {
     const tab = el(`tab${c}`);
     if (tab) tab.classList.toggle('active', c === name);
   });
 
+  // sync the chart crop dropdown if it exists
+  const cropDrop = el('cropChartSelect');
+  if (cropDrop) cropDrop.value = name;
+
   renderCrop(name);
+  setManualTargetSelect(name);
   buildLineChart(Number(document.querySelector('.range-select')?.value || 24));
 
   if (!persist) return;
@@ -301,30 +392,60 @@ async function selectCrop(name, persist = true) {
   }
 }
 
+async function fetchCommandState() {
+  try {
+    const commands = await apiFetch('/api/commands/state');
+    state.commandState = commands;
+    renderCommandState();
+  } catch (error) {
+    console.error('Failed to fetch command state:', error.message);
+  }
+}
+
 /* ---- Backend data sync ---- */
 function applyLatestReading(latest) {
   if (!latest) return;
 
-  state.temperature = toNumber(latest.temperature, state.temperature);
-  state.humidity = toNumber(latest.humidity, state.humidity);
-  state.moisture = toNumber(latest.moisture ?? latest.soil_moisture, state.moisture);
-  state.pumpOn = typeof latest.pump_on === 'boolean' ? latest.pump_on : state.pumpOn;
-  state.dataLogged = toNumber(latest.data_logged, state.dataLogged);
-  state.waterUsedML = toNumber(latest.water_used_ml, state.waterUsedML);
+  state.temperature  = toNumber(latest.temperature, state.temperature);
+  state.humidity     = toNumber(latest.humidity, state.humidity);
+  state.moisture     = toNumber(latest.moisture ?? latest.soil_moisture, state.moisture);
+  state.pumpOn       = typeof latest.pump_on === 'boolean' ? latest.pump_on : state.pumpOn;
+  state.dataLogged   = toNumber(latest.data_logged, state.dataLogged);
+  state.waterUsedML  = toNumber(latest.water_used_ml, state.waterUsedML);
+
+  // Second sensor channel for Pechay (optional field)
+  if (latest.moisture_pechay !== undefined) {
+    state.moisturePechay = latest.moisture_pechay === null
+      ?
+      null
+      : toNumber(latest.moisture_pechay, null);
+  }
 
   if (latest.last_watered_secs === null || latest.last_watered_secs === undefined) {
     state.lastWateredSecs = null;
   } else {
     state.lastWateredSecs = Math.max(0, toNumber(latest.last_watered_secs, 0));
   }
+
+  if (latest.recorded_at) {
+    const ts = new Date(latest.recorded_at).getTime();
+    if (Number.isFinite(ts)) state.esp32LastSeenMs = ts;
+  }
 }
 
 function applySensorPush(payload) {
   if (!payload) return;
-
   state.temperature = toNumber(payload.temperature, state.temperature);
-  state.humidity = toNumber(payload.humidity, state.humidity);
-  state.moisture = toNumber(payload.moisture ?? payload.soil_moisture, state.moisture);
+  state.humidity    = toNumber(payload.humidity, state.humidity);
+  state.moisture    = toNumber(payload.moisture ?? payload.soil_moisture, state.moisture);
+  state.esp32LastSeenMs = Date.now();
+
+  if (payload.moisture_pechay !== undefined) {
+    state.moisturePechay = payload.moisture_pechay === null
+      ?
+      null
+      : toNumber(payload.moisture_pechay, null);
+  }
 }
 
 async function fetchPumpStats() {
@@ -332,7 +453,6 @@ async function fetchPumpStats() {
     apiFetch('/api/pump/runtime'),
     apiFetch('/api/pump/cycles')
   ]);
-
   if (runtimeResult.status === 'fulfilled') {
     state.pumpSeconds = Math.max(0, toNumber(runtimeResult.value.seconds, state.pumpSeconds));
   }
@@ -355,9 +475,8 @@ async function fetchLatest() {
 async function loadSettings() {
   try {
     const settings = await apiFetch('/api/settings');
-
-    const pulse = el('rangePulseDuration');
-    const pwm = el('rangePwm');
+    const pulse     = el('rangePulseDuration');
+    const pwm       = el('rangePwm');
     const threshold = el('rangeMoistureThreshold');
 
     if (pulse && settings.pulse_duration_min !== undefined) {
@@ -383,9 +502,9 @@ async function loadSettings() {
 async function fetchComfortIndex() {
   try {
     const comfort = await apiFetch('/api/environment/comfort-index');
-    setComfortRow('comfortHeatBar', 'comfortHeatStatus', comfort.heat_stress, '#ef9f27');
-    setComfortRow('comfortEtBar', 'comfortEtStatus', comfort.evapotranspiration, '#3b6d11');
-    setComfortRow('comfortFungalBar', 'comfortFungalStatus', comfort.fungal_risk, '#7f77dd');
+    setComfortRow('comfortHeatBar',   'comfortHeatStatus',   comfort.heat_stress,       '#ef9f27');
+    setComfortRow('comfortEtBar',     'comfortEtStatus',     comfort.evapotranspiration, '#3b6d11');
+    setComfortRow('comfortFungalBar', 'comfortFungalStatus', comfort.fungal_risk,        '#7f77dd');
   } catch (error) {
     console.error('Failed to fetch comfort index:', error.message);
   }
@@ -395,15 +514,14 @@ async function fetchComfortIndex() {
 async function togglePumpSwitch() {
   const toggle = el('pumpToggleSwitch');
   if (!toggle) return;
-
   const desiredState = !!toggle.checked;
   try {
     const response = await apiFetch('/api/pump/toggle', {
       method: 'POST',
       body: JSON.stringify({ state: desiredState })
     });
-
     state.pumpOn = !!response.pump_on;
+    await fetchCommandState();
     await fetchPumpStats();
     refreshCards();
   } catch (error) {
@@ -415,30 +533,36 @@ async function togglePumpSwitch() {
 async function manualWater() {
   const btn = el('btnManualWater');
   if (!btn) return;
-
   const durationMinutes = clamp(toNumber(el('rangePulseDuration')?.value, 30), 1, 120);
-  const originalMarkup = btn.innerHTML;
+  const targetCrop = String(el('manualTargetCrop')?.value || state.cropActive || 'Tomato');
+  const originalMarkup  = btn.innerHTML;
   btn.disabled = true;
 
   try {
+    await apiFetch('/api/servo/target', {
+      method: 'POST',
+      body: JSON.stringify({ crop: targetCrop, source: 'manual_override' })
+    });
+
     await apiFetch('/api/pump/manual', {
       method: 'POST',
-      body: JSON.stringify({ duration_minutes: durationMinutes })
+      body: JSON.stringify({ duration_minutes: durationMinutes, target_crop: targetCrop })
     });
 
     state.pumpOn = true;
     state.lastWateredSecs = 0;
+    await fetchCommandState();
     refreshCards();
 
-    btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Watering...';
+    btn.innerHTML      = `<i class="bi bi-check2 me-1"></i>Watering ${targetCrop}...`;
     btn.style.background = '#c0dd97';
   } catch (error) {
     console.error('Failed to trigger manual watering:', error.message);
   } finally {
     setTimeout(() => {
-      btn.innerHTML = originalMarkup;
+      btn.innerHTML      = originalMarkup;
       btn.style.background = '';
-      btn.disabled = false;
+      btn.disabled       = false;
     }, 2500);
   }
 }
@@ -446,101 +570,120 @@ async function manualWater() {
 /* ---- Chart builders ---- */
 async function buildLineChart(hours = 24) {
   let labels = [];
-  let data = [];
+  let data   = [];
 
   try {
-    const history = await apiFetch(`/api/sensors/moisture/history?hours=${encodeURIComponent(hours)}`);
+    const history = await apiFetch(
+      `/api/sensors/moisture/history?hours=${encodeURIComponent(hours)}&crop=${encodeURIComponent(state.activeChartCrop)}`
+    );
     labels = Array.isArray(history?.labels) ? history.labels : [];
-    data = Array.isArray(history?.data) ? history.data.map((v) => toNumber(v, state.moisture)) : [];
+    data   = Array.isArray(history?.data)
+      ?
+      history.data.map((v) => toNumber(v, state.moisture))
+      : [];
   } catch (error) {
     console.error('Failed to fetch moisture history:', error.message);
   }
 
   if (labels.length === 0 || data.length === 0) {
     labels = ['Now'];
-    data = [state.moisture];
+    data   = [state.activeChartCrop === 'Pechay' && state.moisturePechay !== null
+      ?
+      state.moisturePechay
+      : state.moisture];
   }
 
   const ctx = el('moistureLineChart')?.getContext('2d');
   if (!ctx) return;
 
   if (lineChart) lineChart.destroy();
-
+  const isPechay     = state.activeChartCrop === 'Pechay';
+  const lineColor    = isPechay ?
+    '#185fa5' : C_GREEN_MID;
+  const fillColor    = isPechay ? 'rgba(24,95,165,0.08)' : C_GREEN_FILL;
+  const pointColor   = isPechay ? '#185fa5' : C_GREEN_MID;
   lineChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
       datasets: [
         {
-          label: `${state.activeChartCrop || 'Tomato'} moisture (%)`,
+          label: `${state.activeChartCrop} Moisture (%)`,
           data,
-          borderColor: state.activeChartCrop === 'Pechay' ? '#185fa5' : C_GREEN_MID,
-          backgroundColor: state.activeChartCrop === 'Pechay' ? 'rgba(24,95,165,0.08)' : C_GREEN_FILL,
-          borderWidth: 2,
-          pointRadius: 3,
-          pointBackgroundColor: C_GREEN_MID,
-          fill: true,
-          tension: 0.4
+          borderColor:          lineColor,
+          backgroundColor:      fillColor,
+      
+          borderWidth:          2,
+          pointRadius:          3,
+          pointBackgroundColor: pointColor,
+          fill:                 true,
+          tension:              0.4
+    
         },
         {
           label: 'Optimal',
           data: Array(labels.length).fill(40),
           borderColor: C_GREEN_MID,
           borderWidth: 1.5,
-          borderDash: [6, 4],
+          borderDash:  [6, 4],
           pointRadius: 0,
-          fill: false
+          fill:        false
+  
         },
         {
           label: 'Low threshold',
           data: Array(labels.length).fill(20),
           borderColor: C_ORANGE,
           borderWidth: 1.5,
-          borderDash: [4, 4],
+          borderDash:  [4, 4],
           pointRadius: 0,
-          fill: false
+          fill:       
+         false
         }
       ]
     },
     options: {
-      responsive: true,
+      responsive:          true,
       maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
         tooltip: {
-          callbacks: {
-            label: (c) => `${c.dataset.label}: ${c.parsed.y}%`
-          }
+          callbacks: { label: 
+            (c) => `${c.dataset.label}: ${c.parsed.y}%` }
         }
       },
       scales: {
         x: {
           ticks: {
-            color: C_TICK,
-            font: { size: 9 },
-            maxRotation: 0,
-            autoSkip: true,
+            color:         C_TICK,
+            font:          { size: 9 },
+         
+            maxRotation:   0,
+            autoSkip:      true,
             maxTicksLimit: 9
           },
           grid: { color: C_GRID }
         },
         y: {
           min: 0,
-          max: 80,
+          max: 
+            80,
           title: {
             display: true,
-            text: `${state.activeChartCrop || 'Soil'} Moisture (%)`,
-            color: C_TICK,
-            font: { size: 9 }
+            text:    `${state.activeChartCrop} Moisture (%)`,
+            color:   C_TICK,
+            font:    { size: 9 }
           },
           ticks: {
-            color: C_TICK,
-            font: { size: 9 },
-            callback: (v) => v,
+   
+            color:         C_TICK,
+            font:          { size: 9 },
+            callback:      (v) => v,
             maxTicksLimit: 6
           },
-          grid: { color: C_GRID }
+          grid: { color: C_GRID 
+          }
         }
       }
     }
@@ -548,13 +691,13 @@ async function buildLineChart(hours = 24) {
 }
 
 async function buildBarChart() {
-  let days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  let days     = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   let averages = [0, 0, 0, 0, 0, 0, 0];
 
   try {
     const weekly = await apiFetch('/api/sensors/moisture/weekly-average');
     if (Array.isArray(weekly?.days) && Array.isArray(weekly?.averages) && weekly.days.length > 0) {
-      days = weekly.days;
+      days     = weekly.days;
       averages = weekly.averages.map((v) => toNumber(v, 0));
     }
   } catch (error) {
@@ -565,7 +708,6 @@ async function buildBarChart() {
   if (!ctx) return;
 
   if (barChart) barChart.destroy();
-
   barChart = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -573,31 +715,29 @@ async function buildBarChart() {
       datasets: [
         {
           label: 'Avg moisture (%)',
-          data: averages,
+          data:  averages,
           backgroundColor: days.map((_, i) => (i % 2 === 0 ? C_GREEN_ACCENT : C_GREEN_MID)),
-          borderRadius: 5,
-          borderSkipped: false
+          borderRadius:    5,
+   
+          borderSkipped:   false
         }
       ]
     },
     options: {
-      responsive: true,
+      responsive:          true,
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (c) => `${c.parsed.y}%`
-          }
-        }
+        tooltip: { callbacks: { label: (c) => `${c.parsed.y}%` } }
       },
+  
       scales: {
         x: { ticks: { color: C_TICK, font: { size: 10 } }, grid: { display: false } },
         y: {
-          min: 0,
-          max: 80,
+          min: 0, max: 80,
           ticks: { color: C_TICK, font: { size: 9 }, callback: (v) => v, maxTicksLimit: 6 },
-          grid: { color: C_GRID }
+          grid:  { color: C_GRID }
+        
         }
       }
     },
@@ -607,14 +747,12 @@ async function buildBarChart() {
         afterDatasetsDraw(chart) {
           const { ctx: chartCtx, data: chartData } = chart;
           chartCtx.save();
-          chartCtx.font = '600 11px DM Sans,sans-serif';
+          chartCtx.font      = '600 11px DM Sans,sans-serif';
           chartCtx.fillStyle = C_GREEN_MID;
           chartCtx.textAlign = 'center';
-
           chart.getDatasetMeta(0).data.forEach((bar, i) => {
             chartCtx.fillText(`${chartData.datasets[0].data[i]}%`, bar.x, bar.y - 5);
           });
-
           chartCtx.restore();
         }
       }
@@ -622,6 +760,7 @@ async function buildBarChart() {
   });
 }
 
+/* ---- Range / crop selectors ---- */
 function updateRange(hours) {
   buildLineChart(Number(hours));
 }
@@ -634,10 +773,9 @@ function updateChartCrop(crop) {
 
 /* ---- Slider listeners ---- */
 function bindControlListeners() {
-  const pulseRange = el('rangePulseDuration');
-  const pwmRange = el('rangePwm');
+  const pulseRange     = el('rangePulseDuration');
+  const pwmRange       = el('rangePwm');
   const thresholdRange = el('rangeMoistureThreshold');
-
   const sendPulseDuration = debounce(async (value) => {
     try {
       await apiFetch('/api/settings/pulse-duration', {
@@ -648,7 +786,6 @@ function bindControlListeners() {
       console.error('Failed to update pulse duration:', error.message);
     }
   }, 350);
-
   const sendPwm = debounce(async (value) => {
     try {
       await apiFetch('/api/pump/pwm', {
@@ -659,7 +796,6 @@ function bindControlListeners() {
       console.error('Failed to update PWM duty cycle:', error.message);
     }
   }, 350);
-
   const sendMoistureThreshold = debounce(async (value) => {
     try {
       await apiFetch('/api/settings/moisture-threshold', {
@@ -670,7 +806,6 @@ function bindControlListeners() {
       console.error('Failed to update moisture threshold:', error.message);
     }
   }, 350);
-
   if (pulseRange) {
     pulseRange.addEventListener('input', () => {
       el('durVal').textContent = `${pulseRange.value} min`;
@@ -696,7 +831,6 @@ function bindControlListeners() {
 /* ---- WebSocket wiring ---- */
 function connectWebSocket() {
   if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
-
   try {
     ws = new WebSocket(WS_URL);
   } catch (error) {
@@ -718,25 +852,26 @@ function connectWebSocket() {
       }
 
       if (payload.type === 'pump_update') {
+      
         state.pumpOn = !!payload.data?.pump_on;
+        await fetchCommandState();
         await fetchPumpStats();
         refreshCards();
+      }
+
+      if (payload.type === 'command_update') {
+        state.commandState = payload.data;
+        renderCommandState();
       }
     } catch (_err) {
       // Ignore malformed push payloads.
     }
   });
-
   ws.addEventListener('close', () => {
     scheduleWebSocketReconnect();
   });
-
   ws.addEventListener('error', () => {
-    try {
-      ws.close();
-    } catch (_err) {
-      // Ignore close failures.
-    }
+    try { ws.close(); } catch (_err) { /* ignore */ }
   });
 }
 
@@ -769,6 +904,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await Promise.all([
     fetchLatest(),
+    fetchCommandState(),
     buildLineChart(Number(document.querySelector('.range-select')?.value || 24)),
     buildBarChart(),
     fetchComfortIndex()

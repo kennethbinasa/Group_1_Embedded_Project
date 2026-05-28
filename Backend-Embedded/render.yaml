@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: agrosense-backend
+    env: docker
+    plan: free
+    dockerfilePath: ./Backend-Embedded/Dockerfile
+    rootDir: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: INGEST_API_KEY
+        sync: false
