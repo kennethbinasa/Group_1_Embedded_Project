@@ -1,0 +1,7 @@
+{
+  "name": "group-1-embedded-project",
+  "private": true,
+  "scripts": {
+    "start": "npm start --prefix Backend-Embedded"
+  }
+}
