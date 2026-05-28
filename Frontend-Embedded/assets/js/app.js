@@ -16,6 +16,7 @@ const state = {
   activeChartCrop: 'Tomato',
   moisturePechay: null,   // set from second sensor channel when available
   commandState: null,
+  mode: null,
   esp32LastSeenMs: null,
   dataReceived: false
 };
@@ -373,6 +374,24 @@ function refreshCards() {
   const esp32Icon2  = el('esp32StatusIcon');
   if (esp32Badge)  { esp32Badge.textContent = esp32Label; esp32Badge.className = `stat-badge ${esp32Cls}`; }
   if (esp32Icon2)  esp32Icon2.className = `bi ${esp32Icon} status-icon`;
+
+  const modeBadge = el('modeBadge');
+  const modeLabel = el('modeStatusLabel');
+  const modeIcon = el('modeStatusIcon');
+  const normalizedMode = state.mode === 'MANUAL' ? 'MANUAL' : (state.mode === 'AUTO' ? 'AUTO' : null);
+
+  if (modeBadge) {
+    modeBadge.textContent = normalizedMode || '--';
+    modeBadge.className = `stat-badge ${normalizedMode === 'MANUAL' ? 'badge-manual' : (normalizedMode === 'AUTO' ? 'badge-auto' : 'badge-off')}`;
+  }
+
+  if (modeLabel) {
+    modeLabel.textContent = normalizedMode || '--';
+  }
+
+  if (modeIcon) {
+    modeIcon.className = `bi ${normalizedMode === 'MANUAL' ? 'bi-hand-index-thumb-fill' : 'bi-toggles'} status-icon`;
+  }
 }
 
 /* ---- Crop profile ---- */
@@ -435,6 +454,10 @@ function applyLatestReading(latest) {
   state.pumpOn       = typeof latest.pump_on === 'boolean' ? latest.pump_on : state.pumpOn;
   state.dataLogged   = toNumber(latest.data_logged, state.dataLogged);
   state.waterUsedML  = toNumber(latest.water_used_ml, state.waterUsedML);
+  if (typeof latest.mode === 'string') {
+    const nextMode = latest.mode.trim().toUpperCase();
+    if (nextMode === 'AUTO' || nextMode === 'MANUAL') state.mode = nextMode;
+  }
 
   // Second sensor channel for Pechay (optional field)
   if (latest.moisture_pechay !== undefined) {
@@ -463,6 +486,10 @@ function applySensorPush(payload) {
   state.humidity    = toNumber(payload.humidity, state.humidity);
   state.moisture    = toNumber(payload.moisture ?? payload.soil_moisture, state.moisture);
   state.esp32LastSeenMs = Date.now();
+  if (typeof payload.mode === 'string') {
+    const nextMode = payload.mode.trim().toUpperCase();
+    if (nextMode === 'AUTO' || nextMode === 'MANUAL') state.mode = nextMode;
+  }
 
   if (payload.moisture_pechay !== undefined) {
     state.moisturePechay = payload.moisture_pechay === null
@@ -886,6 +913,14 @@ function connectWebSocket() {
       if (payload.type === 'command_update') {
         state.commandState = payload.data;
         renderCommandState();
+      }
+
+      if (payload.type === 'mode_update') {
+        const nextMode = typeof payload.data?.mode === 'string' ? payload.data.mode.trim().toUpperCase() : '';
+        if (nextMode === 'AUTO' || nextMode === 'MANUAL') {
+          state.mode = nextMode;
+          refreshCards();
+        }
       }
     } catch (_err) {
       // Ignore malformed push payloads.
