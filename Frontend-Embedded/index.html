@@ -17,9 +17,18 @@
       <span class="brand-name">AgroSense</span>
     </div>
     <span class="nav-subtitle">Smart Irrigation Dashboard</span>
+    <nav class="nav-links">
+      <button class="nav-link active" id="navDashboard" onclick="showView('dashboard')">
+        <i class="bi bi-speedometer2 me-1"></i>Dashboard
+      </button>
+      <button class="nav-link" id="navMembers" onclick="showView('members')">
+        <i class="bi bi-people me-1"></i>Members
+      </button>
+    </nav>
   </nav>
 
-  <main class="container-fluid px-4 py-4">
+  <div id="viewDashboard">
+    <main class="container-fluid px-4 py-4">
 
     <!-- STAT CARDS -->
     <div class="row g-3 mb-3 align-items-stretch">
@@ -44,10 +53,10 @@
               <i class="bi bi-droplet-fill vwc-icon-sm"></i>
               <span class="vwc-crop-name">Pechay</span>
             </div>
-            <div class="vwc-crop-right">
-              <span class="vwc-crop-val" id="soilMoisturePechay">— %</span>
-              <span class="vwc-crop-unit">VWC</span>
-              <span class="stat-badge vwc-crop-badge badge-off" id="moistureBadgePechay">No data</span>
+        
+            <div class="vwc-status-footer">
+              <div class="status-label-heading">Soil Status</div>
+              <span class="stat-badge badge-optimal" id="moistureBadge">OPTIMAL - Soil Moisture Within Safe Range</span>
             </div>
           </div>
           <div class="vwc-status-footer">
@@ -55,7 +64,6 @@
             <span class="stat-badge badge-optimal" id="moistureBadge">OPTIMAL - Soil Moisture Within Safe Range</span>
           </div>
         </div>
-      </div>
 
       <!-- Temperature -->
       <div class="col-6 col-md-3 d-flex">
@@ -76,7 +84,6 @@
             <span class="gauge-tile-sub">Ambient air temp</span>
           </div>
         </div>
-      </div>
 
       <!-- Humidity -->
       <div class="col-6 col-md-3 d-flex">
@@ -97,7 +104,6 @@
             <span class="gauge-tile-sub">Relative humidity</span>
           </div>
         </div>
-      </div>
 
       <!-- Pump Status -->
       <div class="col-6 col-md-3 d-flex">
@@ -107,15 +113,20 @@
             <div class="pump-ring" id="pumpRing">
               <i class="bi bi-power pump-icon-big" id="pumpIcon"></i>
             </div>
-          </div>
-          <div class="d-flex gap-2 flex-wrap justify-content-center">
-            <span class="stat-badge badge-on" id="pumpBadge">Pump: ON</span>
-            <span class="stat-badge badge-auto" id="modeBadge">AUTO</span>
-          </div>
-          <div class="pump-stats-row">
-            <div class="pump-stat">
-              <span class="pump-stat-val" id="pumpRuntime">0:00</span>
-              <span class="pump-stat-key">Runtime</span>
+            <div class="d-flex gap-2 flex-wrap justify-content-center">
+              <span class="stat-badge badge-on" id="pumpBadge">Pump: ON</span>
+              <span class="stat-badge badge-auto" id="modeBadge">AUTO</span>
+            </div>
+            <div class="pump-stats-row">
+              <div class="pump-stat">
+                <span class="pump-stat-val" id="pumpRuntime">0:00</span>
+                <span class="pump-stat-key">Runtime</span>
+              </div>
+              <div class="pump-stat-divider"></div>
+              <div class="pump-stat">
+                <span class="pump-stat-val" id="pumpCycles">0</span>
+                <span class="pump-stat-key">Cycles today</span>
+               </div>
             </div>
             <div class="pump-stat-divider"></div>
             <div class="pump-stat">
@@ -124,7 +135,6 @@
             </div>
           </div>
         </div>
-      </div>
 
     </div><!-- /stat cards -->
 
@@ -178,9 +188,8 @@
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div class="actuation-divider"></div>
+              <div class="actuation-divider"></div>
 
             <!-- RIGHT: sliders -->
             <div class="actuation-right">
@@ -230,7 +239,6 @@
             </div>
           </div>
         </div>
-      </div>
 
       <!-- Change 6: Crop Profile with planting date + age/stage -->
       <div class="col-12 col-md-4">
@@ -263,7 +271,6 @@
           <div id="cropParams"></div>
         </div>
       </div>
-    </div>
 
     <!-- CHARTS -->
     <div class="row g-3 mb-3">
@@ -283,12 +290,41 @@
               </select>
             </div>
           </div>
-          <div class="chart-wrapper">
-            <canvas id="moistureLineChart"></canvas>
+         </div>
+        <div class="col-12 col-md-5">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <span><i class="bi bi-bar-chart chart-icon me-1"></i>History overview</span>
+            </div>
+            <p class="chart-sub">Avg. moisture levels</p>
+            <div class="chart-wrapper">
+              <canvas id="historyBarChart"></canvas>
+            </div>
           </div>
-          <div class="chart-legend mt-2">
-            <span class="legend-swatch swatch-optimal"></span> Optimal threshold
-            <span class="legend-swatch swatch-low ms-3"></span> Low threshold
+        </div>
+      </div>
+
+      <div class="row g-3 mb-2 align-items-stretch">
+
+        <div class="col-12 col-md-6 col-lg-5 d-flex">
+           <div class="panel-card ambient-compact w-100">
+            <div class="panel-title"><i class="bi bi-speedometer2 me-2"></i>Ambient environment</div>
+            <div class="comfort-title">Comfort index</div>
+            <div class="comfort-row">
+              <span class="comfort-key">Heat stress risk</span>
+              <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortHeatBar" style="width:55%;background:#ef9f27"></div></div>
+              <span class="comfort-status status-moderate-text" id="comfortHeatStatus">Moderate</span>
+            </div>
+             <div class="comfort-row">
+              <span class="comfort-key">Evapotranspiration</span>
+              <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortEtBar" style="width:28%;background:#3b6d11"></div></div>
+              <span class="comfort-status status-low-text" id="comfortEtStatus">Low</span>
+            </div>
+            <div class="comfort-row">
+              <span class="comfort-key">Fungal risk</span>
+              <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortFungalBar" style="width:70%;background:#7f77dd"></div></div>
+               <span class="comfort-status status-elevated-text" id="comfortFungalStatus">Elevated</span>
+            </div>
           </div>
         </div>
       </div>
@@ -303,13 +339,13 @@
               <option value="Pechay">🥬 Pechay</option>
             </select>
           </div>
-          <p class="chart-sub">Avg. moisture levels</p>
-          <div class="chart-wrapper">
-            <canvas id="historyBarChart"></canvas>
+          <div class="status-bar status-bar-tall">
+            <i class="bi bi-toggles status-icon" id="modeStatusIcon"></i>
+            <span>Mode: <strong id="modeStatusLabel">--</strong></span>
           </div>
         </div>
+
       </div>
-    </div>
 
     <!-- AMBIENT + STATUS FOOTER -->
     <div class="row g-3 mb-2 align-items-stretch">
@@ -333,31 +369,56 @@
             <span class="comfort-status status-elevated-text" id="comfortFungalStatus">Elevated</span>
           </div>
         </div>
-      </div>
 
-      <div class="col-12 col-md-6 col-lg-7 d-flex flex-column gap-3">
-        <div class="status-bar status-bar-tall">
-          <i class="bi bi-wifi status-icon"></i>
-          <span>Connected to: <strong>AgroSense Network</strong></span>
+        <div class="member-card">
+          <div class="member-photo-frame">
+            <img src="assets/img/DY.jpg" alt="Member 3">
+          </div>
+          <div class="member-info">
+            <div class="member-name">Mildred Rickymae V. Dy</div>
+            <span class="member-badge">Member</span>
+          </div>
         </div>
         <div class="status-bar status-bar-tall">
           <i class="bi bi-database-fill status-icon"></i>
           <span>Data logged: <strong id="dataLogged">0 Entries</strong></span>
         </div>
-        <div class="status-bar status-bar-tall">
-          <i class="bi bi-cpu status-icon" id="esp32StatusIcon"></i>
-          <span><span class="stat-badge badge-esp-offline" id="esp32StatusBadge">ESP32: No data</span></span>
+
+        <div class="member-card">
+          <div class="member-photo-frame">
+            <img src="assets/img/MENDREZ.jpg" alt="Member 5">
+          </div>
+          <div class="member-info">
+            <div class="member-name">Lalei F. Mendrez</div>
+            <span class="member-badge">Member</span>
+          </div>
         </div>
-        <div class="status-bar status-bar-tall">
-          <i class="bi bi-toggles status-icon" id="modeStatusIcon"></i>
-          <span>Mode: <strong id="modeStatusLabel">--</strong></span>
+
+        <div class="member-card">
+          <div class="member-photo-frame">
+            <img src="assets/img/OCTAVIANO.jpg" alt="Member 6">
+          </div>
+          <div class="member-info">
+            <div class="member-name">Jaero B. Octaviano</div>
+            <span class="member-badge">Member</span>
+          </div>
         </div>
       </div>
     </div>
 
-  </main>
+        <div class="member-card">
+          <div class="member-photo-frame">
+            <img src="assets/img/SISON.jpg" alt="Member 8">
+          </div>
+          <div class="member-info">
+            <div class="member-name">Alleiah Lorraine M. Sison</div>
+            <span class="member-badge">Member</span>
+          </div>
+        </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+      </div>
+    </main>
+  </div><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
