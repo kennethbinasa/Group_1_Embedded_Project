@@ -193,6 +193,7 @@ ensureSettingDefault('crop', 'Tomato');
 ensureSettingDefault('pulse_duration_min', '30');
 ensureSettingDefault('pwm_duty_cycle', '65');
 ensureSettingDefault('moisture_threshold', '30');
+ensureSettingDefault('device_mode', 'AUTO');
 ensureSettingDefault('control_version', '0');
 ensureSettingDefault('pump_target_state', '0');
 ensureSettingDefault('pump_command_version', '0');
@@ -622,6 +623,7 @@ app.get('/api/sensors/latest', (_req, res) => {
     ...row,
     moisture_pechay: row.moisture_pechay,
     pump_on: getPumpStatus(),
+    mode: getSettingValue('device_mode', 'AUTO'),
     data_logged: logged.count,
     water_used_ml: row.flow_ml || 0,
     last_watered_secs: lastWatered
@@ -688,7 +690,13 @@ app.get('/api/sensors/moisture/history', (req, res) => {
 
     if (value === null) continue;
 
-    labels.push(new Date(row.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    labels.push(
+      new Date(row.recorded_at).toLocaleTimeString('en-PH', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Asia/Manila'
+      })
+    );
     data.push(+value.toFixed(1));
   }
 
@@ -823,6 +831,13 @@ app.post('/api/ingest', (req, res) => {
     if (desiredPumpState !== null && desiredPumpState === incomingPumpState) {
       acknowledgePumpVersion(getSettingInt('pump_command_version', 0));
     }
+  }
+
+  const incomingModeRaw = typeof req.body.mode === 'string' ? req.body.mode.trim().toUpperCase() : '';
+  const incomingMode = incomingModeRaw === 'MANUAL' ? 'MANUAL' : (incomingModeRaw === 'AUTO' ? 'AUTO' : '');
+  if (incomingMode.length > 0) {
+    upsertSettingStmt.run('device_mode', incomingMode);
+    broadcast('mode_update', { mode: incomingMode });
   }
 
   const targetServoCrop = getSettingValue('servo_target_crop', getSettingValue('crop', 'Tomato'));

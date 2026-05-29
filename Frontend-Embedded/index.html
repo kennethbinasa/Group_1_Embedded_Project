@@ -106,7 +106,10 @@
               <i class="bi bi-power pump-icon-big" id="pumpIcon"></i>
             </div>
           </div>
-          <span class="stat-badge badge-on" id="pumpBadge">Pump: ON</span>
+          <div class="d-flex gap-2 flex-wrap justify-content-center">
+            <span class="stat-badge badge-on" id="pumpBadge">Pump: ON</span>
+            <span class="stat-badge badge-auto" id="modeBadge">AUTO</span>
+          </div>
           <div class="pump-stats-row">
             <div class="pump-stat">
               <span class="pump-stat-val" id="pumpRuntime">0:00</span>
@@ -288,6 +291,10 @@
         <div class="status-bar status-bar-tall">
           <i class="bi bi-cpu status-icon" id="esp32StatusIcon"></i>
           <span><span class="stat-badge badge-esp-offline" id="esp32StatusBadge">ESP32: No data</span></span>
+        </div>
+        <div class="status-bar status-bar-tall">
+          <i class="bi bi-toggles status-icon" id="modeStatusIcon"></i>
+          <span>Mode: <strong id="modeStatusLabel">--</strong></span>
         </div>
       </div>
 

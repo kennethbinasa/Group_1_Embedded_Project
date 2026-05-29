@@ -1,13 +1,3 @@
-# Dependencies
-node_modules/
-
-# Logs
-npm-debug.log*
-
-# Environment files
-.env
-.env.*
-
-# OS/editor noise
-.DS_Store
-Thumbs.db
+.vercel
+.env*
+**/node_modules
