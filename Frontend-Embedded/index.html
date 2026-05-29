@@ -7,7 +7,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/style.css?v=20260528" />
+  <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body>
 
@@ -21,12 +21,13 @@
 
   <main class="container-fluid px-4 py-4">
 
+    <!-- STAT CARDS -->
     <div class="row g-3 mb-3 align-items-stretch">
 
+      <!-- Soil Telemetry -->
       <div class="col-6 col-md-3 d-flex">
         <div class="stat-card w-100 vwc-card">
           <div class="stat-label"><i class="bi bi-droplet me-1"></i>Soil Telemetry</div>
-      
           <div class="vwc-crop-row">
             <div class="vwc-crop-left">
               <i class="bi bi-droplet-fill vwc-icon-sm"></i>
@@ -38,7 +39,6 @@
               <span class="stat-badge vwc-crop-badge badge-optimal" id="moistureBadgeTomato">Optimal</span>
             </div>
           </div>
-      
           <div class="vwc-crop-row">
             <div class="vwc-crop-left">
               <i class="bi bi-droplet-fill vwc-icon-sm"></i>
@@ -50,7 +50,6 @@
               <span class="stat-badge vwc-crop-badge badge-off" id="moistureBadgePechay">No data</span>
             </div>
           </div>
-      
           <div class="vwc-status-footer">
             <div class="status-label-heading">Soil Status</div>
             <span class="stat-badge badge-optimal" id="moistureBadge">OPTIMAL - Soil Moisture Within Safe Range</span>
@@ -58,6 +57,7 @@
         </div>
       </div>
 
+      <!-- Temperature -->
       <div class="col-6 col-md-3 d-flex">
         <div class="stat-card w-100 stat-card-gauge">
           <div class="stat-label"><i class="bi bi-thermometer-half me-1"></i>Temperature</div>
@@ -78,6 +78,7 @@
         </div>
       </div>
 
+      <!-- Humidity -->
       <div class="col-6 col-md-3 d-flex">
         <div class="stat-card w-100 stat-card-gauge">
           <div class="stat-label"><i class="bi bi-cloud me-1"></i>Humidity</div>
@@ -98,6 +99,7 @@
         </div>
       </div>
 
+      <!-- Pump Status -->
       <div class="col-6 col-md-3 d-flex">
         <div class="stat-card w-100 pump-card">
           <div class="stat-label"><i class="bi bi-activity me-1"></i>Pump Status</div>
@@ -119,47 +121,56 @@
             <div class="pump-stat">
               <span class="pump-stat-val" id="pumpCycles">0</span>
               <span class="pump-stat-key">Cycles today</span>
-             </div>
+            </div>
           </div>
         </div>
       </div>
 
-    </div><div class="row g-3 mb-3">
+    </div><!-- /stat cards -->
+
+    <!-- ACTUATION + CROP PROFILE -->
+    <div class="row g-3 mb-3">
       <div class="col-12 col-md-8">
         <div class="panel-card">
           <div class="panel-title"><i class="bi bi-sliders me-2"></i>Live actuation &amp; control</div>
           <div class="actuation-grid">
 
+            <!-- LEFT -->
             <div class="actuation-left">
-              <div class="ctrl-label mb-2">Pump toggle</div>
+
+              <!-- Change 1: Manual Mode toggle (replaces Pump toggle) -->
+              <div class="ctrl-label mb-1">Manual mode</div>
+              <div class="act-mode-hint mb-2">Enable to take direct control of the pump</div>
               <div class="d-flex align-items-center gap-2 mb-3">
                 <label class="agro-toggle">
-                   <input type="checkbox" id="pumpToggleSwitch" checked onchange="togglePumpSwitch()">
+                  <input type="checkbox" id="manualModeSwitch" onchange="toggleManualMode()">
                   <span class="agro-slider"></span>
                 </label>
-                <span class="toggle-state-label" id="toggleLabel">ON</span>
+                <span class="toggle-state-label" id="manualModeLabel">OFF</span>
               </div>
-              <button class="btn-agro btn-water w-100 mb-3" id="btnManualWater" onclick="manualWater()">
-                <i class="bi bi-play-fill me-1"></i>Manual override
+
+              <!-- Change 2: Water Plant button (replaces Manual override) -->
+              <div class="ctrl-label mb-1"><i class="bi bi-diagram-3 me-1"></i>Target plot</div>
+              <select class="form-select form-select-sm mb-2" id="manualTargetCrop">
+                <option value="Tomato">🍅 Tomato</option>
+                <option value="Pechay">🥬 Pechay</option>
+              </select>
+              <button class="btn-agro btn-water w-100 mb-3" id="btnWaterPlant" onclick="waterPlant()">
+                <i class="bi bi-droplet-fill me-1"></i>Water Plant
               </button>
-              <div class="mb-2">
-                <div class="ctrl-label mb-1"><i class="bi bi-diagram-3 me-1"></i>Manual target plot</div>
-                <select class="form-select form-select-sm" id="manualTargetCrop">
-                  <option value="Tomato">Tomato</option>
-                  <option value="Pechay">Pechay</option>
-                </select>
-              </div>
-              <div class="range-hint mb-2" id="commandSyncState">Control sync: loading...</div>
+
+              <div class="range-hint mb-1" id="commandSyncState">Control sync: loading...</div>
               <div class="range-hint mb-3" id="commandVersionState">Servo v0/ack0 · Pump v0/ack0</div>
+
               <div class="act-info-grid">
                 <div class="act-pill">
                   <span class="act-pill-icon"><i class="bi bi-clock-history"></i></span>
                   <div>
-                    <div class="act-pill-val" id="lastWatered">Just now</div>
+                    <div class="act-pill-val" id="lastWatered">No data</div>
                     <div class="act-pill-key">Last watered</div>
                   </div>
                 </div>
-                 <div class="act-pill">
+                <div class="act-pill">
                   <span class="act-pill-icon"><i class="bi bi-droplet-half"></i></span>
                   <div>
                     <div class="act-pill-val" id="waterUsed">0 mL</div>
@@ -171,37 +182,57 @@
 
             <div class="actuation-divider"></div>
 
+            <!-- RIGHT: sliders -->
             <div class="actuation-right">
+
+              <!-- Change 3: Water volume slider (replaces pulse duration) -->
               <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="ctrl-label"><i class="bi bi-stopwatch me-1"></i>Pulse duration</span>
-                  <span class="ctrl-val" id="durVal">30 min</span>
+                  <span class="ctrl-label"><i class="bi bi-cup-fill me-1"></i>Water volume</span>
+                  <span class="ctrl-val" id="waterVolVal">300 mL</span>
                 </div>
-                <input type="range" class="agro-range" id="rangePulseDuration" min="5" max="120" step="5" value="30">
-                <div class="range-hint">5 min &nbsp;&middot;&nbsp; max 120 min</div>
+                <input type="range" class="agro-range" id="rangeWaterVolume" min="30" max="1000" step="10" value="300">
+                <div class="range-hint">30 mL min &nbsp;·&nbsp; 1,000 mL max</div>
               </div>
+
+              <!-- Change 4a: Burst Duration -->
+              <div class="mb-3">
+                <div class="ctrl-label mb-1"><i class="bi bi-lightning-charge me-1"></i>Burst mode</div>
+                <div class="burst-mode-hint mb-2">Pump opens and closes repeatedly until volume is reached</div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="ctrl-label-sm">Burst duration</span>
+                  <span class="ctrl-val" id="burstDurVal">5 s</span>
+                </div>
+                <input type="range" class="agro-range" id="rangeBurstDuration" min="1" max="30" step="1" value="5">
+                <div class="range-hint">Pump ON time per burst &nbsp;·&nbsp; max 30 s</div>
+              </div>
+
+              <!-- Change 4b: Burst Delay -->
               <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="ctrl-label"><i class="bi bi-speedometer me-1"></i>PWM flow rate</span>
-                  <span class="ctrl-val" id="pwmVal">65%</span>
-                 </div>
-                <input type="range" class="agro-range" id="rangePwm" min="0" max="100" step="1" value="65">
-                <div class="range-hint">0% = off &nbsp;&middot;&nbsp; 100% = full flow</div>
+                  <span class="ctrl-label-sm">Burst delay</span>
+                  <span class="ctrl-val" id="burstDelayVal">3 s</span>
+                </div>
+                <input type="range" class="agro-range agro-range-delay" id="rangeBurstDelay" min="1" max="30" step="1" value="3">
+                <div class="range-hint">Pump OFF pause between bursts &nbsp;·&nbsp; max 30 s</div>
               </div>
+
+              <!-- Moisture threshold -->
               <div>
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <span class="ctrl-label"><i class="bi bi-moisture me-1"></i>Moisture threshold</span>
                   <span class="ctrl-val" id="threshVal">30%</span>
-                 </div>
+                </div>
                 <input type="range" class="agro-range agro-range-warn" id="rangeMoistureThreshold" min="10" max="60" step="1" value="30">
                 <div class="range-hint">Pump triggers below this VWC level</div>
               </div>
-             </div>
 
+            </div>
           </div>
         </div>
       </div>
 
+      <!-- Change 6: Crop Profile with planting date + age/stage -->
       <div class="col-12 col-md-4">
         <div class="panel-card h-100">
           <div class="panel-title"><i class="bi bi-flower2 me-2"></i>Crop profile</div>
@@ -209,23 +240,42 @@
             <button class="crop-tab active" id="tabTomato" onclick="selectCrop('Tomato')">Tomato</button>
             <button class="crop-tab" id="tabPechay" onclick="selectCrop('Pechay')">Pechay</button>
           </div>
+
+          <!-- Planting date row -->
+          <div class="plant-date-row mb-3">
+            <div class="plant-date-label">
+              <i class="bi bi-calendar-event me-1"></i>Date planted
+            </div>
+            <div class="plant-date-inputs">
+              <input type="date" class="plant-date-input" id="plantingDate" onchange="onPlantingDateChange()">
+              <button class="plant-date-clear" onclick="clearPlantingDate()" title="Clear date">
+                <i class="bi bi-x-circle"></i>
+              </button>
+            </div>
+            <!-- Age / stage display -->
+            <div class="plant-age-row" id="plantAgeRow" style="display:none">
+              <span class="plant-age-val" id="plantAgeDays">0</span>
+              <span class="plant-age-label">days old</span>
+              <span class="plant-stage-badge" id="plantStageBadge">Seedling</span>
+            </div>
+          </div>
+
           <div id="cropParams"></div>
         </div>
       </div>
     </div>
 
+    <!-- CHARTS -->
     <div class="row g-3 mb-3">
       <div class="col-12 col-md-7">
         <div class="chart-card">
           <div class="chart-card-header">
             <span><i class="bi bi-graph-up chart-icon me-1"></i>Soil moisture levels</span>
-            
             <div class="chart-header-controls">
               <select class="range-select" id="cropChartSelect" onchange="updateChartCrop(this.value)">
                 <option value="Tomato">🍅 Tomato</option>
                 <option value="Pechay">🥬 Pechay</option>
               </select>
-              
               <select class="range-select" onchange="updateRange(this.value)">
                 <option value="24">Last 24 hours</option>
                 <option value="12">Last 12 hours</option>
@@ -241,11 +291,17 @@
             <span class="legend-swatch swatch-low ms-3"></span> Low threshold
           </div>
         </div>
-       </div>
+      </div>
+
+      <!-- Change 5: History overview with crop dropdown -->
       <div class="col-12 col-md-5">
         <div class="chart-card">
           <div class="chart-card-header">
             <span><i class="bi bi-bar-chart chart-icon me-1"></i>History overview</span>
+            <select class="range-select" id="historyCropSelect" onchange="updateHistoryCrop(this.value)">
+              <option value="Tomato">🍅 Tomato</option>
+              <option value="Pechay">🥬 Pechay</option>
+            </select>
           </div>
           <p class="chart-sub">Avg. moisture levels</p>
           <div class="chart-wrapper">
@@ -255,10 +311,10 @@
       </div>
     </div>
 
+    <!-- AMBIENT + STATUS FOOTER -->
     <div class="row g-3 mb-2 align-items-stretch">
-
       <div class="col-12 col-md-6 col-lg-5 d-flex">
-         <div class="panel-card ambient-compact w-100">
+        <div class="panel-card ambient-compact w-100">
           <div class="panel-title"><i class="bi bi-speedometer2 me-2"></i>Ambient environment</div>
           <div class="comfort-title">Comfort index</div>
           <div class="comfort-row">
@@ -266,7 +322,7 @@
             <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortHeatBar" style="width:55%;background:#ef9f27"></div></div>
             <span class="comfort-status status-moderate-text" id="comfortHeatStatus">Moderate</span>
           </div>
-           <div class="comfort-row">
+          <div class="comfort-row">
             <span class="comfort-key">Evapotranspiration</span>
             <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortEtBar" style="width:28%;background:#3b6d11"></div></div>
             <span class="comfort-status status-low-text" id="comfortEtStatus">Low</span>
@@ -274,7 +330,7 @@
           <div class="comfort-row">
             <span class="comfort-key">Fungal risk</span>
             <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortFungalBar" style="width:70%;background:#7f77dd"></div></div>
-             <span class="comfort-status status-elevated-text" id="comfortFungalStatus">Elevated</span>
+            <span class="comfort-status status-elevated-text" id="comfortFungalStatus">Elevated</span>
           </div>
         </div>
       </div>
@@ -286,7 +342,7 @@
         </div>
         <div class="status-bar status-bar-tall">
           <i class="bi bi-database-fill status-icon"></i>
-          <span>Data logged: <strong id="dataLogged">276 Entries</strong></span>
+          <span>Data logged: <strong id="dataLogged">0 Entries</strong></span>
         </div>
         <div class="status-bar status-bar-tall">
           <i class="bi bi-cpu status-icon" id="esp32StatusIcon"></i>
@@ -297,14 +353,12 @@
           <span>Mode: <strong id="modeStatusLabel">--</strong></span>
         </div>
       </div>
-
     </div>
 
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script src="assets/js/runtime-config.js?v=20260528"></script>
-  <script src="assets/js/app.js?v=20260528"></script>
+  <script src="assets/js/app.js"></script>
 </body>
 </html>
