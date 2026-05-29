@@ -17,14 +17,6 @@
       <span class="brand-name">AgroSense</span>
     </div>
     <span class="nav-subtitle">Smart Irrigation Dashboard</span>
-    <nav class="nav-links">
-      <button class="nav-link active" id="navDashboard" onclick="showView('dashboard')">
-        <i class="bi bi-speedometer2 me-1"></i>Dashboard
-      </button>
-      <button class="nav-link" id="navMembers" onclick="showView('members')">
-        <i class="bi bi-people me-1"></i>Members
-      </button>
-    </nav>
   </nav>
 
   <!-- ═══════════════ DASHBOARD VIEW ═══════════════ -->
@@ -64,6 +56,7 @@
             </div>
           </div>
         </div>
+      </div>
 
         <div class="col-6 col-md-3 d-flex">
           <div class="stat-card w-100 stat-card-gauge">
@@ -84,6 +77,7 @@
             </div>
           </div>
         </div>
+      </div>
 
         <div class="col-6 col-md-3 d-flex">
           <div class="stat-card w-100 stat-card-gauge">
@@ -104,6 +98,7 @@
             </div>
           </div>
         </div>
+      </div>
 
         <div class="col-6 col-md-3 d-flex">
           <div class="stat-card w-100 pump-card">
@@ -113,20 +108,15 @@
                 <i class="bi bi-power pump-icon-big pump-off-color" id="pumpIcon"></i>
               </div>
             </div>
-            <div class="d-flex gap-2 flex-wrap justify-content-center">
-              <span class="stat-badge badge-off" id="pumpBadge">Pump: OFF</span>
-              <span class="stat-badge badge-off" id="modeBadge">—</span>
-            </div>
-            <div class="pump-stats-row">
-              <div class="pump-stat">
-                <span class="pump-stat-val" id="pumpRuntime">0:00</span>
-                <span class="pump-stat-key">Runtime</span>
-              </div>
-              <div class="pump-stat-divider"></div>
-              <div class="pump-stat">
-                <span class="pump-stat-val" id="pumpCycles">0</span>
-                <span class="pump-stat-key">Cycles today</span>
-              </div>
+          </div>
+          <div class="d-flex gap-2 flex-wrap justify-content-center">
+            <span class="stat-badge badge-on" id="pumpBadge">Pump: ON</span>
+            <span class="stat-badge badge-auto" id="modeBadge">AUTO</span>
+          </div>
+          <div class="pump-stats-row">
+            <div class="pump-stat">
+              <span class="pump-stat-val" id="pumpRuntime">0:00</span>
+              <span class="pump-stat-key">Runtime</span>
             </div>
             <div class="pump-mode-row">
               <i class="bi bi-info-circle"></i>
@@ -134,23 +124,59 @@
             </div>
           </div>
         </div>
-
       </div>
 
-      <div class="row g-3 mb-3">
-        <div class="col-12 col-md-8">
-          <div class="panel-card">
-            <div class="panel-title"><i class="bi bi-sliders me-2"></i>Live actuation &amp; control</div>
-            <div class="actuation-grid">
-              <div class="actuation-left">
+    </div><!-- /stat cards -->
+
+    <!-- ACTUATION + CROP PROFILE -->
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-md-8">
+        <div class="panel-card">
+          <div class="panel-title"><i class="bi bi-sliders me-2"></i>Live actuation &amp; control</div>
+          <div class="actuation-grid">
+
+            <!-- LEFT -->
+            <div class="actuation-left">
+
+              <!-- Manual Mode toggle -->
+              <div>
                 <div class="ctrl-label mb-1">Manual mode</div>
                 <div class="act-mode-hint mb-2">Enable to take direct control of the pump</div>
-                <div class="d-flex align-items-center gap-2 mb-3">
+                <div class="d-flex align-items-center gap-2">
                   <label class="agro-toggle">
                     <input type="checkbox" id="manualModeSwitch" onchange="toggleManualMode()">
                     <span class="agro-slider"></span>
                   </label>
                   <span class="toggle-state-label" id="manualModeLabel">OFF</span>
+                </div>
+              </div>
+
+              <!-- Target plot + Water Plant -->
+              <div>
+                <div class="ctrl-label mb-1"><i class="bi bi-diagram-3 me-1"></i>Target plot</div>
+                <select class="form-select form-select-sm mb-2" id="manualTargetCrop">
+                  <option value="Tomato">🍅 Tomato</option>
+                  <option value="Pechay">🥬 Pechay</option>
+                </select>
+                <button class="btn-agro btn-water w-100" id="btnWaterPlant" onclick="waterPlant()">
+                  <i class="bi bi-droplet-fill me-1"></i>Water Plant
+                </button>
+              </div>
+
+              <!-- Sync state -->
+              <div>
+                <div class="range-hint mb-1" id="commandSyncState">Control sync: loading...</div>
+                <div class="range-hint" id="commandVersionState">Servo v0/ack0 · Pump v0/ack0</div>
+              </div>
+
+              <!-- Info pills -->
+              <div class="act-info-grid">
+                <div class="act-pill">
+                  <span class="act-pill-icon"><i class="bi bi-clock-history"></i></span>
+                  <div>
+                    <div class="act-pill-val" id="lastWatered">No data</div>
+                    <div class="act-pill-key">Last watered</div>
+                  </div>
                 </div>
                 <div class="ctrl-label mb-1"><i class="bi bi-diagram-3 me-1"></i>Target plot</div>
                 <select class="form-select form-select-sm mb-2" id="manualTargetCrop">
@@ -178,34 +204,59 @@
                     </div>
                   </div>
                 </div>
+                <div class="act-pill act-pill-well">
+                  <span class="act-pill-icon">
+                    <div class="well-icon-wrap">
+                      <i class="bi bi-bucket-fill well-icon"></i>
+                      <div class="well-level-bar" id="wellLevelBar"></div>
+                    </div>
+                  </span>
+                  <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-baseline">
+                      <div class="act-pill-val" id="wellLevel">-- mL</div>
+                      <div class="act-pill-pct" id="wellLevelPct">--%</div>
+                    </div>
+                    <div class="act-pill-key">Well water level</div>
+                    <div class="well-progress-wrap">
+                      <div class="well-progress-bar" id="wellProgressBar" style="width:0%"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="actuation-divider"></div>
-              <div class="actuation-right">
-                <div class="mb-4">
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="ctrl-label"><i class="bi bi-cup-fill me-1"></i>Water volume</span>
-                    <span class="ctrl-val" id="waterVolVal">300 mL</span>
-                  </div>
-                  <input type="range" class="agro-range" id="rangeWaterVolume" min="30" max="1000" step="10" value="300">
-                  <div class="range-hint">30 mL min &nbsp;·&nbsp; 1,000 mL max</div>
+            </div>
+
+            <div class="actuation-divider"></div>
+
+            <!-- RIGHT: sliders -->
+            <div class="actuation-right">
+
+              <!-- Change 3: Water volume slider (replaces pulse duration) -->
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="ctrl-label"><i class="bi bi-cup-fill me-1"></i>Water volume</span>
+                  <span class="ctrl-val" id="waterVolVal">300 mL</span>
                 </div>
-                <div class="mb-3">
-                  <div class="ctrl-label mb-1"><i class="bi bi-lightning-charge me-1"></i>Burst mode</div>
-                  <div class="burst-mode-hint mb-2">Pump opens and closes repeatedly until volume is reached</div>
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="ctrl-label-sm">Burst duration</span>
-                    <span class="ctrl-val" id="burstDurVal">5 s</span>
-                  </div>
-                  <input type="range" class="agro-range" id="rangeBurstDuration" min="1" max="30" step="1" value="5">
-                  <div class="range-hint">Pump ON time per burst &nbsp;·&nbsp; max 30 s</div>
+                <input type="range" class="agro-range" id="rangeWaterVolume" min="30" max="1000" step="10" value="300">
+                <div class="range-hint">30 mL min &nbsp;·&nbsp; 1,000 mL max</div>
+              </div>
+
+              <!-- Change 4a: Burst Duration -->
+              <div>
+                <div class="ctrl-label mb-1"><i class="bi bi-lightning-charge me-1"></i>Burst mode</div>
+                <div class="burst-mode-hint mb-2">Pump opens and closes repeatedly until volume is reached</div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="ctrl-label-sm">Burst duration</span>
+                  <span class="ctrl-val" id="burstDurVal">5 s</span>
                 </div>
-                <div class="mb-4">
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span class="ctrl-label-sm">Burst delay</span>
-                    <span class="ctrl-val" id="burstDelayVal">3 s</span>
-                  </div>
-                  <input type="range" class="agro-range agro-range-delay" id="rangeBurstDelay" min="1" max="30" step="1" value="3">
-                  <div class="range-hint">Pump OFF pause between bursts &nbsp;·&nbsp; max 30 s</div>
+                <input type="range" class="agro-range" id="rangeBurstDuration" min="1" max="30" step="1" value="5">
+                <div class="range-hint">Pump ON time per burst &nbsp;·&nbsp; max 30 s</div>
+              </div>
+
+              <!-- Change 4b: Burst Delay -->
+              <div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="ctrl-label-sm">Burst delay</span>
+                  <span class="ctrl-val" id="burstDelayVal">3 s</span>
                 </div>
                 <div>
                   <div class="d-flex justify-content-between align-items-center mb-1">
@@ -219,6 +270,7 @@
             </div>
           </div>
         </div>
+      </div>
 
         <div class="col-12 col-md-4">
           <div class="panel-card h-100">
@@ -245,6 +297,7 @@
           </div>
         </div>
       </div>
+    </div>
 
       <div class="row g-3 mb-3">
         <div class="col-12 col-md-7">
@@ -309,9 +362,9 @@
             <i class="bi bi-cpu status-icon" id="esp32StatusIcon"></i>
             <span><span id="esp32StatusBadge" class="stat-badge badge-esp-offline">ESP32: No data</span></span>
           </div>
-          <div class="status-bar status-bar-tall">
-            <i class="bi bi-toggles status-icon" id="modeStatusIcon"></i>
-            <span>Mode: <strong id="modeStatusLabel">--</strong></span>
+          <p class="chart-sub">Avg. moisture levels</p>
+          <div class="chart-wrapper">
+            <canvas id="historyBarChart"></canvas>
           </div>
           <div class="status-bar status-bar-tall">
             <i class="bi bi-database-fill status-icon"></i>
@@ -339,6 +392,7 @@
 
       
       </div>
+    </div>
 
       <!-- ── Members grid ───────────────────────── -->
       <div class="members-grid">
@@ -362,6 +416,7 @@
             <span class="member-badge">Member</span>
           </div>
         </div>
+      </div>
 
         <div class="member-card">
           <div class="member-photo-frame">
