@@ -138,30 +138,38 @@
             <!-- LEFT -->
             <div class="actuation-left">
 
-              <!-- Change 1: Manual Mode toggle (replaces Pump toggle) -->
-              <div class="ctrl-label mb-1">Manual mode</div>
-              <div class="act-mode-hint mb-2">Enable to take direct control of the pump</div>
-              <div class="d-flex align-items-center gap-2 mb-3">
-                <label class="agro-toggle">
-                  <input type="checkbox" id="manualModeSwitch" onchange="toggleManualMode()">
-                  <span class="agro-slider"></span>
-                </label>
-                <span class="toggle-state-label" id="manualModeLabel">OFF</span>
+              <!-- Manual Mode toggle -->
+              <div>
+                <div class="ctrl-label mb-1">Manual mode</div>
+                <div class="act-mode-hint mb-2">Enable to take direct control of the pump</div>
+                <div class="d-flex align-items-center gap-2">
+                  <label class="agro-toggle">
+                    <input type="checkbox" id="manualModeSwitch" onchange="toggleManualMode()">
+                    <span class="agro-slider"></span>
+                  </label>
+                  <span class="toggle-state-label" id="manualModeLabel">OFF</span>
+                </div>
               </div>
 
-              <!-- Change 2: Water Plant button (replaces Manual override) -->
-              <div class="ctrl-label mb-1"><i class="bi bi-diagram-3 me-1"></i>Target plot</div>
-              <select class="form-select form-select-sm mb-2" id="manualTargetCrop">
-                <option value="Tomato">🍅 Tomato</option>
-                <option value="Pechay">🥬 Pechay</option>
-              </select>
-              <button class="btn-agro btn-water w-100 mb-3" id="btnWaterPlant" onclick="waterPlant()">
-                <i class="bi bi-droplet-fill me-1"></i>Water Plant
-              </button>
+              <!-- Target plot + Water Plant -->
+              <div>
+                <div class="ctrl-label mb-1"><i class="bi bi-diagram-3 me-1"></i>Target plot</div>
+                <select class="form-select form-select-sm mb-2" id="manualTargetCrop">
+                  <option value="Tomato">🍅 Tomato</option>
+                  <option value="Pechay">🥬 Pechay</option>
+                </select>
+                <button class="btn-agro btn-water w-100" id="btnWaterPlant" onclick="waterPlant()">
+                  <i class="bi bi-droplet-fill me-1"></i>Water Plant
+                </button>
+              </div>
 
-              <div class="range-hint mb-1" id="commandSyncState">Control sync: loading...</div>
-              <div class="range-hint mb-3" id="commandVersionState">Servo v0/ack0 · Pump v0/ack0</div>
+              <!-- Sync state -->
+              <div>
+                <div class="range-hint mb-1" id="commandSyncState">Control sync: loading...</div>
+                <div class="range-hint" id="commandVersionState">Servo v0/ack0 · Pump v0/ack0</div>
+              </div>
 
+              <!-- Info pills -->
               <div class="act-info-grid">
                 <div class="act-pill">
                   <span class="act-pill-icon"><i class="bi bi-clock-history"></i></span>
@@ -177,6 +185,24 @@
                     <div class="act-pill-key">Water used</div>
                   </div>
                 </div>
+                <div class="act-pill act-pill-well">
+                  <span class="act-pill-icon">
+                    <div class="well-icon-wrap">
+                      <i class="bi bi-bucket-fill well-icon"></i>
+                      <div class="well-level-bar" id="wellLevelBar"></div>
+                    </div>
+                  </span>
+                  <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-baseline">
+                      <div class="act-pill-val" id="wellLevel">-- mL</div>
+                      <div class="act-pill-pct" id="wellLevelPct">--%</div>
+                    </div>
+                    <div class="act-pill-key">Well water level</div>
+                    <div class="well-progress-wrap">
+                      <div class="well-progress-bar" id="wellProgressBar" style="width:0%"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -186,7 +212,7 @@
             <div class="actuation-right">
 
               <!-- Change 3: Water volume slider (replaces pulse duration) -->
-              <div class="mb-4">
+              <div>
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <span class="ctrl-label"><i class="bi bi-cup-fill me-1"></i>Water volume</span>
                   <span class="ctrl-val" id="waterVolVal">300 mL</span>
@@ -196,7 +222,7 @@
               </div>
 
               <!-- Change 4a: Burst Duration -->
-              <div class="mb-3">
+              <div>
                 <div class="ctrl-label mb-1"><i class="bi bi-lightning-charge me-1"></i>Burst mode</div>
                 <div class="burst-mode-hint mb-2">Pump opens and closes repeatedly until volume is reached</div>
                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -208,7 +234,7 @@
               </div>
 
               <!-- Change 4b: Burst Delay -->
-              <div class="mb-4">
+              <div>
                 <div class="d-flex justify-content-between align-items-center mb-1">
                   <span class="ctrl-label-sm">Burst delay</span>
                   <span class="ctrl-val" id="burstDelayVal">3 s</span>
