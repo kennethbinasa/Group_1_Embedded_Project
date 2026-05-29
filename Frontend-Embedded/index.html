@@ -17,292 +17,392 @@
       <span class="brand-name">AgroSense</span>
     </div>
     <span class="nav-subtitle">Smart Irrigation Dashboard</span>
+    <nav class="nav-links">
+      <button class="nav-link active" id="navDashboard" onclick="showView('dashboard')">
+        <i class="bi bi-speedometer2 me-1"></i>Dashboard
+      </button>
+      <button class="nav-link" id="navMembers" onclick="showView('members')">
+        <i class="bi bi-people me-1"></i>Members
+      </button>
+    </nav>
   </nav>
 
-  <main class="container-fluid px-4 py-4">
+  <div id="viewDashboard">
+    <main class="container-fluid px-4 py-4">
 
-    <div class="row g-3 mb-3 align-items-stretch">
+      <div class="row g-3 mb-3 align-items-stretch">
 
-      <div class="col-6 col-md-3 d-flex">
-        <div class="stat-card w-100 vwc-card">
-          <div class="stat-label"><i class="bi bi-droplet me-1"></i>Soil Telemetry</div>
-      
-          <div class="vwc-crop-row">
-            <div class="vwc-crop-left">
-              <i class="bi bi-droplet-fill vwc-icon-sm"></i>
-              <span class="vwc-crop-name">Tomato</span>
-            </div>
-            <div class="vwc-crop-right">
-              <span class="vwc-crop-val" id="soilMoisture">38.4%</span>
-              <span class="vwc-crop-unit">VWC</span>
-              <span class="stat-badge vwc-crop-badge badge-optimal" id="moistureBadgeTomato">Optimal</span>
-            </div>
-          </div>
-      
-          <div class="vwc-crop-row">
-            <div class="vwc-crop-left">
-              <i class="bi bi-droplet-fill vwc-icon-sm"></i>
-              <span class="vwc-crop-name">Pechay</span>
-            </div>
-            <div class="vwc-crop-right">
-              <span class="vwc-crop-val" id="soilMoisturePechay">— %</span>
-              <span class="vwc-crop-unit">VWC</span>
-              <span class="stat-badge vwc-crop-badge badge-off" id="moistureBadgePechay">No data</span>
-            </div>
-          </div>
-      
-          <div class="vwc-status-footer">
-            <div class="status-label-heading">Soil Status</div>
-            <span class="stat-badge badge-optimal" id="moistureBadge">OPTIMAL - Soil Moisture Within Safe Range</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-6 col-md-3 d-flex">
-        <div class="stat-card w-100 stat-card-gauge">
-          <div class="stat-label"><i class="bi bi-thermometer-half me-1"></i>Temperature</div>
-          <div class="gauge-tile-wrap">
-            <svg class="gauge-svg" viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 90 A62 62 0 0 1 142 90" fill="none" stroke="#f0f0ee" stroke-width="14" stroke-linecap="round"/>
-              <path id="tempArc" d="M18 90 A62 62 0 0 1 142 90" fill="none" stroke="#e24b4a"
-                    stroke-width="14" stroke-linecap="round" stroke-dasharray="195" stroke-dashoffset="97"/>
-              <text id="gaugeTempVal" x="80" y="82" text-anchor="middle"
-                    font-size="24" font-weight="700" fill="#a32d2d" font-family="Outfit,sans-serif">27.2</text>
-              <text x="80" y="97" text-anchor="middle" font-size="11" fill="#7a9178" font-family="DM Sans,sans-serif">°C</text>
-            </svg>
-          </div>
-          <div class="gauge-tile-meta">
-            <span class="gauge-tile-status status-warm" id="tempStatus">Warm</span>
-            <span class="gauge-tile-sub">Ambient air temp</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-6 col-md-3 d-flex">
-        <div class="stat-card w-100 stat-card-gauge">
-          <div class="stat-label"><i class="bi bi-cloud me-1"></i>Humidity</div>
-          <div class="gauge-tile-wrap">
-            <svg class="gauge-svg" viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 90 A62 62 0 0 1 142 90" fill="none" stroke="#f0f0ee" stroke-width="14" stroke-linecap="round"/>
-              <path id="humArc" d="M18 90 A62 62 0 0 1 142 90" fill="none" stroke="#378add"
-                    stroke-width="14" stroke-linecap="round" stroke-dasharray="195" stroke-dashoffset="68"/>
-              <text id="gaugeHumVal" x="80" y="82" text-anchor="middle"
-                    font-size="24" font-weight="700" fill="#185fa5" font-family="Outfit,sans-serif">65.2</text>
-              <text x="80" y="97" text-anchor="middle" font-size="11" fill="#7a9178" font-family="DM Sans,sans-serif">%</text>
-            </svg>
-          </div>
-          <div class="gauge-tile-meta">
-            <span class="gauge-tile-status status-moderate" id="humStatus">Moderate</span>
-            <span class="gauge-tile-sub">Relative humidity</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-6 col-md-3 d-flex">
-        <div class="stat-card w-100 pump-card">
-          <div class="stat-label"><i class="bi bi-activity me-1"></i>Pump Status</div>
-          <div class="pump-icon-wrap">
-            <div class="pump-ring" id="pumpRing">
-              <i class="bi bi-power pump-icon-big" id="pumpIcon"></i>
-            </div>
-          </div>
-          <div class="d-flex gap-2 flex-wrap justify-content-center">
-            <span class="stat-badge badge-on" id="pumpBadge">Pump: ON</span>
-            <span class="stat-badge badge-auto" id="modeBadge">AUTO</span>
-          </div>
-          <div class="pump-stats-row">
-            <div class="pump-stat">
-              <span class="pump-stat-val" id="pumpRuntime">0:00</span>
-              <span class="pump-stat-key">Runtime</span>
-            </div>
-            <div class="pump-stat-divider"></div>
-            <div class="pump-stat">
-              <span class="pump-stat-val" id="pumpCycles">0</span>
-              <span class="pump-stat-key">Cycles today</span>
-             </div>
-          </div>
-        </div>
-      </div>
-
-    </div><div class="row g-3 mb-3">
-      <div class="col-12 col-md-8">
-        <div class="panel-card">
-          <div class="panel-title"><i class="bi bi-sliders me-2"></i>Live actuation &amp; control</div>
-          <div class="actuation-grid">
-
-            <div class="actuation-left">
-              <div class="ctrl-label mb-2">Pump toggle</div>
-              <div class="d-flex align-items-center gap-2 mb-3">
-                <label class="agro-toggle">
-                   <input type="checkbox" id="pumpToggleSwitch" checked onchange="togglePumpSwitch()">
-                  <span class="agro-slider"></span>
-                </label>
-                <span class="toggle-state-label" id="toggleLabel">ON</span>
+        <div class="col-6 col-md-3 d-flex">
+          <div class="stat-card w-100 vwc-card">
+            <div class="stat-label"><i class="bi bi-droplet me-1"></i>Soil Telemetry</div>
+        
+            <div class="vwc-crop-row">
+              <div class="vwc-crop-left">
+                <i class="bi bi-droplet-fill vwc-icon-sm"></i>
+                <span class="vwc-crop-name">Tomato</span>
               </div>
-              <button class="btn-agro btn-water w-100 mb-3" id="btnManualWater" onclick="manualWater()">
-                <i class="bi bi-play-fill me-1"></i>Manual override
-              </button>
-              <div class="mb-2">
-                <div class="ctrl-label mb-1"><i class="bi bi-diagram-3 me-1"></i>Manual target plot</div>
-                <select class="form-select form-select-sm" id="manualTargetCrop">
-                  <option value="Tomato">Tomato</option>
-                  <option value="Pechay">Pechay</option>
+              <div class="vwc-crop-right">
+                <span class="vwc-crop-val" id="soilMoisture">38.4%</span>
+                <span class="vwc-crop-unit">VWC</span>
+                <span class="stat-badge vwc-crop-badge badge-optimal" id="moistureBadgeTomato">Optimal</span>
+              </div>
+            </div>
+        
+            <div class="vwc-crop-row">
+              <div class="vwc-crop-left">
+                <i class="bi bi-droplet-fill vwc-icon-sm"></i>
+                <span class="vwc-crop-name">Pechay</span>
+              </div>
+              <div class="vwc-crop-right">
+                <span class="vwc-crop-val" id="soilMoisturePechay">— %</span>
+                <span class="vwc-crop-unit">VWC</span>
+                <span class="stat-badge vwc-crop-badge badge-off" id="moistureBadgePechay">No data</span>
+              </div>
+            </div>
+        
+            <div class="vwc-status-footer">
+              <div class="status-label-heading">Soil Status</div>
+              <span class="stat-badge badge-optimal" id="moistureBadge">OPTIMAL - Soil Moisture Within Safe Range</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-6 col-md-3 d-flex">
+          <div class="stat-card w-100 stat-card-gauge">
+            <div class="stat-label"><i class="bi bi-thermometer-half me-1"></i>Temperature</div>
+            <div class="gauge-tile-wrap">
+              <svg class="gauge-svg" viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 90 A62 62 0 0 1 142 90" fill="none" stroke="#f0f0ee" stroke-width="14" stroke-linecap="round"/>
+                <path id="tempArc" d="M18 90 A62 62 0 0 1 142 90" fill="none" stroke="#e24b4a"
+                      stroke-width="14" stroke-linecap="round" stroke-dasharray="195" stroke-dashoffset="97"/>
+                <text id="gaugeTempVal" x="80" y="82" text-anchor="middle"
+                      font-size="24" font-weight="700" fill="#a32d2d" font-family="Outfit,sans-serif">27.2</text>
+                <text x="80" y="97" text-anchor="middle" font-size="11" fill="#7a9178" font-family="DM Sans,sans-serif">°C</text>
+              </svg>
+            </div>
+            <div class="gauge-tile-meta">
+              <span class="gauge-tile-status status-warm" id="tempStatus">Warm</span>
+              <span class="gauge-tile-sub">Ambient air temp</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-6 col-md-3 d-flex">
+          <div class="stat-card w-100 stat-card-gauge">
+            <div class="stat-label"><i class="bi bi-cloud me-1"></i>Humidity</div>
+            <div class="gauge-tile-wrap">
+              <svg class="gauge-svg" viewBox="0 0 160 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 90 A62 62 0 0 1 142 90" fill="none" stroke="#f0f0ee" stroke-width="14" stroke-linecap="round"/>
+                <path id="humArc" d="M18 90 A62 62 0 0 1 142 90" fill="none" stroke="#378add"
+                      stroke-width="14" stroke-linecap="round" stroke-dasharray="195" stroke-dashoffset="68"/>
+                <text id="gaugeHumVal" x="80" y="82" text-anchor="middle"
+                      font-size="24" font-weight="700" fill="#185fa5" font-family="Outfit,sans-serif">65.2</text>
+                <text x="80" y="97" text-anchor="middle" font-size="11" fill="#7a9178" font-family="DM Sans,sans-serif">%</text>
+              </svg>
+            </div>
+            <div class="gauge-tile-meta">
+              <span class="gauge-tile-status status-moderate" id="humStatus">Moderate</span>
+              <span class="gauge-tile-sub">Relative humidity</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-6 col-md-3 d-flex">
+          <div class="stat-card w-100 pump-card">
+            <div class="stat-label"><i class="bi bi-activity me-1"></i>Pump Status</div>
+            <div class="pump-icon-wrap">
+              <div class="pump-ring" id="pumpRing">
+                <i class="bi bi-power pump-icon-big" id="pumpIcon"></i>
+              </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap justify-content-center">
+              <span class="stat-badge badge-on" id="pumpBadge">Pump: ON</span>
+              <span class="stat-badge badge-auto" id="modeBadge">AUTO</span>
+            </div>
+            <div class="pump-stats-row">
+              <div class="pump-stat">
+                <span class="pump-stat-val" id="pumpRuntime">0:00</span>
+                <span class="pump-stat-key">Runtime</span>
+              </div>
+              <div class="pump-stat-divider"></div>
+              <div class="pump-stat">
+                <span class="pump-stat-val" id="pumpCycles">0</span>
+                <span class="pump-stat-key">Cycles today</span>
+               </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-8">
+          <div class="panel-card">
+            <div class="panel-title"><i class="bi bi-sliders me-2"></i>Live actuation &amp; control</div>
+            <div class="actuation-grid">
+
+              <div class="actuation-left">
+                <div class="ctrl-label mb-2">Pump toggle</div>
+                <div class="d-flex align-items-center gap-2 mb-3">
+                  <label class="agro-toggle">
+                     <input type="checkbox" id="pumpToggleSwitch" checked onchange="togglePumpSwitch()">
+                    <span class="agro-slider"></span>
+                  </label>
+                  <span class="toggle-state-label" id="toggleLabel">ON</span>
+                </div>
+                <button class="btn-agro btn-water w-100 mb-3" id="btnManualWater" onclick="manualWater()">
+                  <i class="bi bi-play-fill me-1"></i>Manual override
+                </button>
+                <div class="mb-2">
+                  <div class="ctrl-label mb-1"><i class="bi bi-diagram-3 me-1"></i>Manual target plot</div>
+                  <select class="form-select form-select-sm" id="manualTargetCrop">
+                    <option value="Tomato">Tomato</option>
+                    <option value="Pechay">Pechay</option>
+                  </select>
+                </div>
+                <div class="range-hint mb-2" id="commandSyncState">Control sync: loading...</div>
+                <div class="range-hint mb-3" id="commandVersionState">Servo v0/ack0 · Pump v0/ack0</div>
+                <div class="act-info-grid">
+                  <div class="act-pill">
+                    <span class="act-pill-icon"><i class="bi bi-clock-history"></i></span>
+                    <div>
+                      <div class="act-pill-val" id="lastWatered">Just now</div>
+                      <div class="act-pill-key">Last watered</div>
+                    </div>
+                  </div>
+                   <div class="act-pill">
+                    <span class="act-pill-icon"><i class="bi bi-droplet-half"></i></span>
+                    <div>
+                      <div class="act-pill-val" id="waterUsed">0 mL</div>
+                      <div class="act-pill-key">Water used</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="actuation-divider"></div>
+
+              <div class="actuation-right">
+                <div class="mb-4">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="ctrl-label"><i class="bi bi-stopwatch me-1"></i>Pulse duration</span>
+                    <span class="ctrl-val" id="durVal">30 min</span>
+                  </div>
+                  <input type="range" class="agro-range" id="rangePulseDuration" min="5" max="120" step="5" value="30">
+                  <div class="range-hint">5 min &nbsp;&middot;&nbsp; max 120 min</div>
+                </div>
+                <div class="mb-4">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="ctrl-label"><i class="bi bi-speedometer me-1"></i>PWM flow rate</span>
+                    <span class="ctrl-val" id="pwmVal">65%</span>
+                   </div>
+                  <input type="range" class="agro-range" id="rangePwm" min="0" max="100" step="1" value="65">
+                  <div class="range-hint">0% = off &nbsp;&middot;&nbsp; 100% = full flow</div>
+                </div>
+                <div>
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="ctrl-label"><i class="bi bi-moisture me-1"></i>Moisture threshold</span>
+                    <span class="ctrl-val" id="threshVal">30%</span>
+                   </div>
+                  <input type="range" class="agro-range agro-range-warn" id="rangeMoistureThreshold" min="10" max="60" step="1" value="30">
+                  <div class="range-hint">Pump triggers below this VWC level</div>
+                </div>
+               </div>
+
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <div class="panel-card h-100">
+            <div class="panel-title"><i class="bi bi-flower2 me-2"></i>Crop profile</div>
+            <div class="crop-tabs mb-3">
+              <button class="crop-tab active" id="tabTomato" onclick="selectCrop('Tomato')">Tomato</button>
+              <button class="crop-tab" id="tabPechay" onclick="selectCrop('Pechay')">Pechay</button>
+            </div>
+            <div id="cropParams"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-7">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <span><i class="bi bi-graph-up chart-icon me-1"></i>Soil moisture levels</span>
+              
+              <div class="chart-header-controls">
+                <select class="range-select" id="cropChartSelect" onchange="updateChartCrop(this.value)">
+                  <option value="Tomato">🍅 Tomato</option>
+                  <option value="Pechay">🥬 Pechay</option>
+                </select>
+                
+                <select class="range-select" onchange="updateRange(this.value)">
+                  <option value="24">Last 24 hours</option>
+                  <option value="12">Last 12 hours</option>
+                  <option value="7">Last 7 days</option>
                 </select>
               </div>
-              <div class="range-hint mb-2" id="commandSyncState">Control sync: loading...</div>
-              <div class="range-hint mb-3" id="commandVersionState">Servo v0/ack0 · Pump v0/ack0</div>
-              <div class="act-info-grid">
-                <div class="act-pill">
-                  <span class="act-pill-icon"><i class="bi bi-clock-history"></i></span>
-                  <div>
-                    <div class="act-pill-val" id="lastWatered">Just now</div>
-                    <div class="act-pill-key">Last watered</div>
-                  </div>
-                </div>
-                 <div class="act-pill">
-                  <span class="act-pill-icon"><i class="bi bi-droplet-half"></i></span>
-                  <div>
-                    <div class="act-pill-val" id="waterUsed">0 mL</div>
-                    <div class="act-pill-key">Water used</div>
-                  </div>
-                </div>
-              </div>
             </div>
-
-            <div class="actuation-divider"></div>
-
-            <div class="actuation-right">
-              <div class="mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="ctrl-label"><i class="bi bi-stopwatch me-1"></i>Pulse duration</span>
-                  <span class="ctrl-val" id="durVal">30 min</span>
-                </div>
-                <input type="range" class="agro-range" id="rangePulseDuration" min="5" max="120" step="5" value="30">
-                <div class="range-hint">5 min &nbsp;&middot;&nbsp; max 120 min</div>
-              </div>
-              <div class="mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="ctrl-label"><i class="bi bi-speedometer me-1"></i>PWM flow rate</span>
-                  <span class="ctrl-val" id="pwmVal">65%</span>
-                 </div>
-                <input type="range" class="agro-range" id="rangePwm" min="0" max="100" step="1" value="65">
-                <div class="range-hint">0% = off &nbsp;&middot;&nbsp; 100% = full flow</div>
-              </div>
-              <div>
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="ctrl-label"><i class="bi bi-moisture me-1"></i>Moisture threshold</span>
-                  <span class="ctrl-val" id="threshVal">30%</span>
-                 </div>
-                <input type="range" class="agro-range agro-range-warn" id="rangeMoistureThreshold" min="10" max="60" step="1" value="30">
-                <div class="range-hint">Pump triggers below this VWC level</div>
-              </div>
-             </div>
-
-          </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-md-4">
-        <div class="panel-card h-100">
-          <div class="panel-title"><i class="bi bi-flower2 me-2"></i>Crop profile</div>
-          <div class="crop-tabs mb-3">
-            <button class="crop-tab active" id="tabTomato" onclick="selectCrop('Tomato')">Tomato</button>
-            <button class="crop-tab" id="tabPechay" onclick="selectCrop('Pechay')">Pechay</button>
-          </div>
-          <div id="cropParams"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row g-3 mb-3">
-      <div class="col-12 col-md-7">
-        <div class="chart-card">
-          <div class="chart-card-header">
-            <span><i class="bi bi-graph-up chart-icon me-1"></i>Soil moisture levels</span>
-            
-            <div class="chart-header-controls">
-              <select class="range-select" id="cropChartSelect" onchange="updateChartCrop(this.value)">
-                <option value="Tomato">🍅 Tomato</option>
-                <option value="Pechay">🥬 Pechay</option>
-              </select>
-              
-              <select class="range-select" onchange="updateRange(this.value)">
-                <option value="24">Last 24 hours</option>
-                <option value="12">Last 12 hours</option>
-                <option value="7">Last 7 days</option>
-              </select>
+            <div class="chart-wrapper">
+              <canvas id="moistureLineChart"></canvas>
+            </div>
+            <div class="chart-legend mt-2">
+              <span class="legend-swatch swatch-optimal"></span> Optimal threshold
+              <span class="legend-swatch swatch-low ms-3"></span> Low threshold
             </div>
           </div>
-          <div class="chart-wrapper">
-            <canvas id="moistureLineChart"></canvas>
-          </div>
-          <div class="chart-legend mt-2">
-            <span class="legend-swatch swatch-optimal"></span> Optimal threshold
-            <span class="legend-swatch swatch-low ms-3"></span> Low threshold
-          </div>
-        </div>
-       </div>
-      <div class="col-12 col-md-5">
-        <div class="chart-card">
-          <div class="chart-card-header">
-            <span><i class="bi bi-bar-chart chart-icon me-1"></i>History overview</span>
-          </div>
-          <p class="chart-sub">Avg. moisture levels</p>
-          <div class="chart-wrapper">
-            <canvas id="historyBarChart"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row g-3 mb-2 align-items-stretch">
-
-      <div class="col-12 col-md-6 col-lg-5 d-flex">
-         <div class="panel-card ambient-compact w-100">
-          <div class="panel-title"><i class="bi bi-speedometer2 me-2"></i>Ambient environment</div>
-          <div class="comfort-title">Comfort index</div>
-          <div class="comfort-row">
-            <span class="comfort-key">Heat stress risk</span>
-            <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortHeatBar" style="width:55%;background:#ef9f27"></div></div>
-            <span class="comfort-status status-moderate-text" id="comfortHeatStatus">Moderate</span>
-          </div>
-           <div class="comfort-row">
-            <span class="comfort-key">Evapotranspiration</span>
-            <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortEtBar" style="width:28%;background:#3b6d11"></div></div>
-            <span class="comfort-status status-low-text" id="comfortEtStatus">Low</span>
-          </div>
-          <div class="comfort-row">
-            <span class="comfort-key">Fungal risk</span>
-            <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortFungalBar" style="width:70%;background:#7f77dd"></div></div>
-             <span class="comfort-status status-elevated-text" id="comfortFungalStatus">Elevated</span>
+         </div>
+        <div class="col-12 col-md-5">
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <span><i class="bi bi-bar-chart chart-icon me-1"></i>History overview</span>
+            </div>
+            <p class="chart-sub">Avg. moisture levels</p>
+            <div class="chart-wrapper">
+              <canvas id="historyBarChart"></canvas>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="col-12 col-md-6 col-lg-7 d-flex flex-column gap-3">
-        <div class="status-bar status-bar-tall">
-          <i class="bi bi-wifi status-icon"></i>
-          <span>Connected to: <strong>AgroSense Network</strong></span>
+      <div class="row g-3 mb-2 align-items-stretch">
+
+        <div class="col-12 col-md-6 col-lg-5 d-flex">
+           <div class="panel-card ambient-compact w-100">
+            <div class="panel-title"><i class="bi bi-speedometer2 me-2"></i>Ambient environment</div>
+            <div class="comfort-title">Comfort index</div>
+            <div class="comfort-row">
+              <span class="comfort-key">Heat stress risk</span>
+              <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortHeatBar" style="width:55%;background:#ef9f27"></div></div>
+              <span class="comfort-status status-moderate-text" id="comfortHeatStatus">Moderate</span>
+            </div>
+             <div class="comfort-row">
+              <span class="comfort-key">Evapotranspiration</span>
+              <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortEtBar" style="width:28%;background:#3b6d11"></div></div>
+              <span class="comfort-status status-low-text" id="comfortEtStatus">Low</span>
+            </div>
+            <div class="comfort-row">
+              <span class="comfort-key">Fungal risk</span>
+              <div class="comfort-bar-wrap"><div class="comfort-bar" id="comfortFungalBar" style="width:70%;background:#7f77dd"></div></div>
+               <span class="comfort-status status-elevated-text" id="comfortFungalStatus">Elevated</span>
+            </div>
+          </div>
         </div>
-        <div class="status-bar status-bar-tall">
-          <i class="bi bi-database-fill status-icon"></i>
-          <span>Data logged: <strong id="dataLogged">276 Entries</strong></span>
+
+        <div class="col-12 col-md-6 col-lg-7 d-flex flex-column gap-3">
+          <div class="status-bar status-bar-tall">
+            <i class="bi bi-wifi status-icon"></i>
+            <span>Connected to: <strong>AgroSense Network</strong></span>
+          </div>
+          <div class="status-bar status-bar-tall">
+            <i class="bi bi-database-fill status-icon"></i>
+            <span>Data logged: <strong id="dataLogged">276 Entries</strong></span>
+          </div>
+          <div class="status-bar status-bar-tall">
+            <i class="bi bi-cpu status-icon" id="esp32StatusIcon"></i>
+            <span><span class="stat-badge badge-esp-offline" id="esp32StatusBadge">ESP32: No data</span></span>
+          </div>
+          <div class="status-bar status-bar-tall">
+            <i class="bi bi-toggles status-icon" id="modeStatusIcon"></i>
+            <span>Mode: <strong id="modeStatusLabel">--</strong></span>
+          </div>
         </div>
-        <div class="status-bar status-bar-tall">
-          <i class="bi bi-cpu status-icon" id="esp32StatusIcon"></i>
-          <span><span class="stat-badge badge-esp-offline" id="esp32StatusBadge">ESP32: No data</span></span>
-        </div>
-        <div class="status-bar status-bar-tall">
-          <i class="bi bi-toggles status-icon" id="modeStatusIcon"></i>
-          <span>Mode: <strong id="modeStatusLabel">--</strong></span>
-        </div>
+
       </div>
 
-    </div>
+    </main>
+  </div><div id="viewMembers" style="display:none;">
+    <main class="container-fluid px-4 py-4">
+      <div class="members-header mb-4">
+        <h2 class="members-title"><i class="bi bi-people me-2"></i>Group Members</h2>
+        <p class="members-sub">8 members &middot; AgroSense Project Team</p>
+      </div>
+      <div class="members-grid">
 
-  </main>
+        <div class="member-card">
+          <div class="member-photo-frame">
+            <img src="assets/img/BINASA.jpg" alt="Member 1">
+          </div>
+          <div class="member-info">
+            <div class="member-name">Kenneth Carl E. Binasa</div>
+            <span class="member-badge badge-leader">Leader</span>
+          </div>
+        </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <div class="member-card">
+          <div class="member-photo-frame">
+            <img src="assets/img/DELOS SANTOS.png" alt="Member 2">
+          </div>
+          <div class="member-info">
+            <div class="member-name">Irish Deane P. Delos Santos</div>
+            <span class="member-badge">Member</span>
+          </div>
+        </div>
+
+        <div class="member-card">
+          <div class="member-photo-frame">
+            <img src="assets/img/DY.jpg" alt="Member 3">
+          </div>
+          <div class="member-info">
+            <div class="member-name">Mildred Rickymae V. Dy</div>
+            <span class="member-badge">Member</span>
+          </div>
+        </div>
+
+        <div class="member-card">
+          <div class="member-photo-frame">
+            <img src="assets/img/FABIC.jpg" alt="Member 4">
+          </div>
+          <div class="member-info">
+            <div class="member-name">Liesharain E. Fabic</div>
+            <span class="member-badge">Member</span>
+          </div>
+        </div>
+
+        <div class="member-card">
+          <div class="member-photo-frame">
+            <img src="assets/img/MENDREZ.jpg" alt="Member 5">
+          </div>
+          <div class="member-info">
+            <div class="member-name">Lalei F. Mendrez</div>
+            <span class="member-badge">Member</span>
+          </div>
+        </div>
+
+        <div class="member-card">
+          <div class="member-photo-frame">
+            <img src="assets/img/OCTAVIANO.jpg" alt="Member 6">
+          </div>
+          <div class="member-info">
+            <div class="member-name">Jaero B. Octaviano</div>
+            <span class="member-badge">Member</span>
+          </div>
+        </div>
+
+        <div class="member-card">
+          <div class="member-photo-frame">
+            <img src="assets/img/PINZON.png" alt="Member 7">
+          </div>
+          <div class="member-info">
+            <div class="member-name">Ahsilei D. Pinzon</div>
+            <span class="member-badge">Member</span>
+          </div>
+        </div>
+
+        <div class="member-card">
+          <div class="member-photo-frame">
+            <img src="assets/img/SISON.jpg" alt="Member 8">
+          </div>
+          <div class="member-info">
+            <div class="member-name">Alleiah Lorraine M. Sison</div>
+            <span class="member-badge">Member</span>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="assets/js/runtime-config.js?v=20260528"></script>
   <script src="assets/js/app.js?v=20260528"></script>

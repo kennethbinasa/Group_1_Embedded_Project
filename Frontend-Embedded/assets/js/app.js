@@ -975,3 +975,32 @@ document.addEventListener('DOMContentLoaded', async () => {
   setInterval(fetchLatest, 5000);
   setInterval(fetchComfortIndex, 30000);
 });
+
+/* ── View switcher (Dashboard ↔ Members) ──────── */
+function showView(view) {
+  const dashboard = document.getElementById('viewDashboard');
+  const members   = document.getElementById('viewMembers');
+  const navDash   = document.getElementById('navDashboard');
+  const navMem    = document.getElementById('navMembers');
+
+  if (view === 'members') {
+    dashboard.style.display = 'none';
+    members.style.display   = 'block';
+    navDash.classList.remove('active');
+    navMem.classList.add('active');
+    
+    /* Reset then re-trigger fade-up so it replays every visit */
+    const cards = members.querySelectorAll('.member-card');
+    cards.forEach(c => c.classList.remove('member-visible'));
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        cards.forEach(c => c.classList.add('member-visible'));
+      });
+    });
+  } else {
+    members.style.display   = 'none';
+    dashboard.style.display = 'block';
+    navMem.classList.remove('active');
+    navDash.classList.add('active');
+  }
+}
