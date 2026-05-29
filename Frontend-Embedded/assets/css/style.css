@@ -716,6 +716,111 @@ html, body {
 }
 .plant-date-clear:hover { color: #c0392b; }
 
+/* ── Navbar link buttons ──────────────────────── */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+}
+.nav-link {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: rgba(255,255,255,.7);
+  font-size: .88rem;
+  font-weight: 500;
+  padding: .4rem .85rem;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: background .15s, color .15s, border-color .15s;
+  display: inline-flex;
+  align-items: center;
+}
+.nav-link:hover {
+  background: rgba(255,255,255,.08);
+  color: #fff;
+}
+.nav-link.active {
+  background: rgba(134,239,172,.15);
+  border-color: rgba(134,239,172,.35);
+  color: #86efac;
+  font-weight: 600;
+}
+
+/* ── Mode badge variants ──────────────────────── */
+.badge-auto   { background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe; }
+.badge-manual { background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
+
+/* ── ESP32 status badge variants ─────────────── */
+.badge-esp-online  { background:var(--green-light); color:var(--green-dark); border:1px solid var(--green-soft); }
+.badge-esp-stale   { background:#fef3c7; color:#92400e; border:1px solid #fde68a; }
+.badge-esp-offline { background:#f0f0f0; color:#555; border:1px solid #ddd; }
+
+/* ── Chart icon ───────────────────────────────── */
+.chart-icon { font-size: .95rem; }
+
+/* ── Members grid & cards ─────────────────────── */
+.members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+.member-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem 1.25rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .75rem;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .35s ease, transform .35s ease, box-shadow .2s;
+}
+.member-card:hover { box-shadow: var(--shadow-md); }
+.member-card.member-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.member-photo-frame {
+  width: 90px; height: 90px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--green-light);
+  flex-shrink: 0;
+}
+.member-photo-frame img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.member-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.member-name {
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+.member-badge {
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 2px 12px;
+  border-radius: 20px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  border: 1px solid var(--green-soft);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
 /* ── Plant age / stage display ────────────────── */
 .plant-age-row {
   display: flex;
