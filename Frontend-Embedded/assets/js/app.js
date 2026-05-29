@@ -424,9 +424,9 @@ async function selectCrop(name, persist = true) {
 
   if (!persist) return;
   try {
-    await apiFetch('/api/settings/crop', {
+    await apiFetch('/api/servo/target', {
       method: 'POST',
-      body: JSON.stringify({ crop: name })
+      body: JSON.stringify({ crop: name, source: 'dashboard' })
     });
   } catch (error) {
     console.error('Failed to save crop selection:', error.message);
